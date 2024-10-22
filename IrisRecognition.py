@@ -22,6 +22,7 @@ def load_images_from_folder(base_folder):
             if os.path.isdir(train_folder):
                 for image_name in os.listdir(train_folder):
                     if image_name.endswith('.bmp'):
+                        #print(image_name)
                         image_path = os.path.join(train_folder, image_name)
                         image = cv2.imread(image_path)
                         images['train'].append(image_path)
@@ -44,11 +45,23 @@ def main():
     train_images = images['train']
     test_images = images['test']
 
-    for image in test_images:
-        print("here")
-        IrisLocalization.locate_iris(image)
-        print("done")
+
+    output_path = './output/train'
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    output_path = './output/test'
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
         
+    for image in train_images:
+        iris, _ = IrisLocalization.locate_iris(image)
+        save_name =  './output/train/'+os.path.basename(image)[:-4] + '_iris.bmp'
+        cv2.imwrite(save_name, iris)
+        
+    for image in test_images:
+        iris, _ = IrisLocalization.locate_iris(image)
+        save_name =  './output/test/'+os.path.basename(image)[:-4] + '_iris.bmp'
+        cv2.imwrite(save_name, iris)
 main()
 
 

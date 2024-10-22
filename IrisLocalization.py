@@ -137,6 +137,16 @@ def detect_pupil(image):
     )
 
     circles = np.around(np.around(circles))
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        """for i in circles[0, :]:
+            # Draw the outer circle on the edge-detected image
+            draw_circle(edges, (i[0], i[1]), i[2], color=(255, 255, 0), thickness=2)  # Yellow color for the circle
+            
+            # Show the result
+            cv2.imshow('Detected pupil on Edges', edges)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()"""
     best_circle = circles[0][0]
     # Adjust circle coordinates
     best_circle[0] += top_left_pupil[0]
@@ -158,7 +168,7 @@ def detect_pupil_and_iris(image_path):
     
     
     # Show the final image with the detected circles
-    #cv2.imshow('img', load_image)
+    #cv2.imshow('im2g', load_image)
     #cv2.waitKey(0)
     #cv2.destroyAllWindows()
     
@@ -166,8 +176,11 @@ def detect_pupil_and_iris(image_path):
 # Main function to locate the iris region between the iris and pupil circles
 def locate_iris(image_path):
     # Load and preprocess the image
+    print(image_path)
     load_image, gray_image = load_and_preprocess_image(image_path)
-    
+    """cv2.imshow('img', gray_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
     # Detect the iris and pupil circles
     iris_circle, iris_center = detect_iris(gray_image)
     pupil_circle, pupil_center = detect_pupil(gray_image)
@@ -197,9 +210,11 @@ def locate_iris(image_path):
     #cv2.imshow('Detected Circles', load_image)
     
     # Wait for a key press and close windows
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
+    """cv2.imshow('segmented', segmented)
+    cv2.waitKey()
+    cv2.destroyAllWindows()"""
     return segmented, mask_between
 
-locate_iris('./database/095/1/095_1_1.bmp')
+#locate_iris('./database/104/2/104_2_4.bmp')

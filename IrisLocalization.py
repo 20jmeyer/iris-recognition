@@ -8,7 +8,7 @@ def load_and_preprocess_image(image_path):
     print(image_path)
     image = cv2.imread(image_path)
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray_image = cv2.bilateralFilter(gray_image,9,75, 75)
+    #gray_image = cv2.bilateralFilter(gray_image,9,75, 75)
     gray_image = cv2.GaussianBlur(gray_image, (5, 5), 0) #Helps to deal with eyelashes
     return image, gray_image
 
@@ -20,9 +20,27 @@ def estimate_pupil_center(image):
     x_center = np.argmin(vertical_projection)        # X coordinate of initial estimated pupil center
     return (x_center, y_center)
 
+def adjust_gamma(image, gamma=1.5):
+    # Build a lookup table mapping pixel values [0, 255] to their adjusted gamma values
+    inv_gamma = 1.0 / gamma
+    table = np.array([(i / 255.0) ** inv_gamma * 255 for i in np.arange(256)]).astype("uint8")
+    
+    # Apply gamma correction using the lookup table
+    return cv2.LUT(image, table)
+
+def darken_blacks(image, threshold_value=50, darkening_factor=0.5):
+    # Create a mask for pixels below the threshold (i.e., dark pixels)
+    mask = image < threshold_value
+
+    # Darken those pixels by reducing their intensity
+    image[mask] = (image[mask] * darkening_factor).astype(np.uint8)
+    
+    return image
+
+
 # Function to find a thresholded sub-image around the estimated center
 # Function to find a thresholded sub-image around the estimated center
-def find_thresholded_subimage(image, center, lower_bound, upper_bound, size=120, is_pupil=True):
+def find_thresholded_subimage(image, center, lower_bound, upper_bound, size=120, is_pupil=True, repeat=False):
     x_center, y_center = center
     half_size = size // 2
     
@@ -39,22 +57,69 @@ def find_thresholded_subimage(image, center, lower_bound, upper_bound, size=120,
     #cv2.waitKey(0)
     # Threshold the sub-image
     if is_pupil:
-        subimage = cv2.GaussianBlur(subimage, (5, 5), 0) #Helps to deal with eyelashes
-        thresh = cv2.adaptiveThreshold(subimage, 255, 
+        if not repeat:
+            subimage = cv2.GaussianBlur(subimage, (5, 5), 0) #Helps to deal with eyelashes
+            #subimage = cv2.equalizeHist(subimage)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            subimage = clahe.apply(subimage)
+            mean_brightness = np.mean(subimage)
+            #print(mean_brightness)
+            if mean_brightness >= 132:
+                print("making darker")
+                subimage = adjust_gamma(subimage, gamma=.6)
+                """cv2.imshow('before', subimage)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()"""
+                subimage = darken_blacks(subimage,50,.2)
+                """cv2.imshow('after', subimage)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()"""
+                #subimage = clahe.apply(subimage)
+            
+            # Apply CLAHE to the grayscale image
+            #
+            """cv2.imshow('imagepulil', subimage)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()"""
+        ret, thresh = cv2.threshold(subimage,lower_bound,upper_bound,cv2.THRESH_BINARY)
+        """thresh = cv2.adaptiveThreshold(subimage, 255, 
                                    cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                    cv2.THRESH_BINARY, 
                                    blockSize=11, 
-                                   C=2)
-        #('image', thresh)
-        #cv2.waitKey(0)
+                                   C=2)"""
+        kernel = np.ones((5, 5), np.uint8) 
+        """cv2.imshow('imagepulil', thresh)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()"""
+        iters = 3 if repeat else 1
+        thresh = cv2.dilate(thresh, kernel, iterations=iters)
+        """cv2.imshow('imagepulil', thresh)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()"""
+        thresh = cv2.erode(thresh, kernel, iterations=iters)
+        """cv2.imshow('imagepulil', thresh)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()"""
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        """cv2.imshow('imagepulil', thresh)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()"""
     else: 
-        subimage = cv2.GaussianBlur(subimage, (5, 5), 0)
+        #subimage = cv2.GaussianBlur(subimage, (5, 5), 0)
         subimage = cv2.equalizeHist(subimage)
-        thresh = cv2.adaptiveThreshold(subimage, 255, 
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    
+        # Apply CLAHE to the grayscale image
+        subimage = clahe.apply(subimage)
+        ret, thresh = cv2.threshold(subimage,lower_bound,upper_bound,cv2.THRESH_BINARY)
+        """thresh = cv2.adaptiveThreshold(subimage, 255, 
                                    cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                    cv2.THRESH_BINARY, 
                                    blockSize=11, 
-                                   C=2)
+                                   C=2)"""
+        """cv2.imshow('theesh', thresh)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()"""
     
     # Calculate moments of the binary image
     M = cv2.moments(thresh)
@@ -70,16 +135,47 @@ def find_thresholded_subimage(image, center, lower_bound, upper_bound, size=120,
 def draw_circle(image, center, radius, color=(255, 244, 0), thickness=2):
     cv2.circle(image, center, radius, color, thickness)
 
+def segment_pupil(image, pupil_circle):
+    # Step 1: Create a mask for the pupil
+    
+    mask = np.zeros(image.shape[:2], dtype=np.uint8)  # Create a blank mask
+    center_coordinates = (pupil_circle[0], pupil_circle[1])  # Center of the pupil
+    radius = pupil_circle[2]  # Radius of the pupil
+    cv2.circle(mask, center_coordinates, radius, (255), thickness=-1)  # Draw a filled circle (pupil mask)
+    """cv2.imshow('maks', mask)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
+    # Step 2: Apply the mask to the original image
+    segmented_pupil = cv2.bitwise_not(image, image, mask=mask)  # Mask out the pupil area
+
+    # Step 3: Show or return the segmented pupil image
+    from matplotlib import pyplot as plt
+    """plt.imshow(segmented_pupil, cmap='gray')  # Display the segmented pupil image
+    plt.show()"""
+
+    return segmented_pupil
+
+
 # Update detect_iris and detect_pupil to return the top-left corner
-def detect_iris(image):
+def detect_iris(image, pupil_circle):
     center = estimate_pupil_center(image)
-    attempt2, final_center, top_left_iris = find_thresholded_subimage(image, center, 160, 180, 240,False)
+    attempt2, final_center, top_left_iris = find_thresholded_subimage(image, center, 100, 165, 250,False)
+    #attempt2 = segment_pupil(attempt2, pupil_circle)
+    masked_image = np.zeros_like(attempt2)
+    height = attempt2.shape[0]
+    masked_image[height // 2:, :] = attempt2[height // 2:, :]
+    attempt2 = masked_image
+    """cv2.imshow('att', attempt2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
     mean, std = cv2.meanStdDev(attempt2)
     lower_threshold = max(0, mean[0] - std[0])  # Set a lower bound based on the mean and std
     upper_threshold = min(255, mean[0] + std[0])  # Set an upper bound similarly
     edges = cv2.Canny(attempt2, int(lower_threshold), int(upper_threshold))
     #edges = cv2.Canny(attempt2, 60, 110)
     from matplotlib import pyplot as plt
+    """plt.imshow(edges)
+    plt.show()"""
     contrast = np.std(edges)
     param1 = int(contrast * 1.5)  # Example adjustment
     param2 = max(20, int(contrast / 5))  # Ensure param2 is not too low
@@ -112,24 +208,36 @@ def detect_iris(image):
     best_circle[1] += top_left_iris[1]
     return best_circle, final_center
 
+def pad_image(image, pad_size):
+    # Add padding around the image
+    padded_image = cv2.copyMakeBorder(image, pad_size, pad_size, pad_size, pad_size, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+    return padded_image
+
 def detect_pupil(image):
     center = estimate_pupil_center(image)
-    attempt1, center1, top_left_pupil = find_thresholded_subimage(image, center, 90, 255, 140)
+    image = cv2.GaussianBlur(image, (5, 5), 0)
+    image = cv2.equalizeHist(image)
+    attempt1, center1, top_left_pupil = find_thresholded_subimage(image, center, 40, 250, 180)
+    attempt1, center1, top_left_pupil = find_thresholded_subimage(image, center1, 40, 250, 120, True)
+    """cv2.imshow('aa1', attempt1)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
     mean, std = cv2.meanStdDev(attempt1)
     lower_threshold = max(0, mean[0] - std[0])  # Set a lower bound based on the mean and std
     upper_threshold = min(255, mean[0] + std[0])  # Set an upper bound similarly
     edges = cv2.Canny(attempt1, int(lower_threshold), int(upper_threshold))
     from matplotlib import pyplot as plt
-    #plt.imshow(edges)
-    #plt.show()
+    edges = pad_image(edges, pad_size=50)
+    """plt.imshow(edges)
+    plt.show()"""
     contrast = np.std(edges)
-    param1 = int(contrast * 1.5)  # Example adjustment
+    param1 = max(1,int(contrast * 1.5))  # Example adjustment
     param2 = max(20, int(contrast / 5))  # Ensure param2 is not too low
     circles = cv2.HoughCircles(
-        attempt1, 
+        edges, 
         cv2.HOUGH_GRADIENT, 
         dp=1.5,              # Decrease the resolution ratio to detect larger circles
-        minDist=80,          # Adjust this to avoid detecting overlapping circles
+        minDist=60,          # Adjust this to avoid detecting overlapping circles
         param1=param1,           # Canny edge detection high threshold
         param2=param2,           # Accumulator threshold for circle detection, lower to capture more
         minRadius=30,        # Increase this to avoid detecting very small circles
@@ -139,18 +247,18 @@ def detect_pupil(image):
     circles = np.around(np.around(circles))
     if circles is not None:
         circles = np.uint16(np.around(circles))
-        """for i in circles[0, :]:
+        for i in circles[0, :]:
             # Draw the outer circle on the edge-detected image
             draw_circle(edges, (i[0], i[1]), i[2], color=(255, 255, 0), thickness=2)  # Yellow color for the circle
             
             # Show the result
-            cv2.imshow('Detected pupil on Edges', edges)
+            """cv2.imshow('Detected pupil on Edges', edges)
             cv2.waitKey(0)
             cv2.destroyAllWindows()"""
     best_circle = circles[0][0]
     # Adjust circle coordinates
-    best_circle[0] += top_left_pupil[0]
-    best_circle[1] += top_left_pupil[1]
+    best_circle[0] += top_left_pupil[0]-50 #need to undo the padding and the shrinking
+    best_circle[1] += top_left_pupil[1]-50
     return best_circle, center1
 
 
@@ -161,8 +269,8 @@ def detect_pupil(image):
 # Main function to process the image and detect pupil and iris boundaries
 def detect_pupil_and_iris(image_path):
     load_image, gray_image = load_and_preprocess_image(image_path)
-    iris_circle, iris_center = detect_iris(gray_image)
     pupil_circle, pupil_center = detect_pupil(gray_image)
+    iris_circle, iris_center = detect_iris(gray_image, pupil_circle)
     draw_circle(load_image, (int(iris_circle[0]), int(iris_circle[1])), int(iris_circle[2]))
     draw_circle(load_image, (int(pupil_circle[0]), int(pupil_circle[1])), int(pupil_circle[2]))
     
@@ -182,8 +290,8 @@ def locate_iris(image_path):
     cv2.waitKey(0)
     cv2.destroyAllWindows()"""
     # Detect the iris and pupil circles
-    iris_circle, iris_center = detect_iris(gray_image)
     pupil_circle, pupil_center = detect_pupil(gray_image)
+    iris_circle, iris_center = detect_iris(gray_image, pupil_circle)
     
     # Create a mask for the iris
     iris_mask = np.zeros(gray_image.shape[:2], dtype=np.uint8)
@@ -217,4 +325,4 @@ def locate_iris(image_path):
     cv2.destroyAllWindows()"""
     return segmented, mask_between
 
-#locate_iris('./database/104/2/104_2_4.bmp')
+locate_iris('./database/091/1/091_1_1.bmp')

@@ -306,7 +306,7 @@ def locate_iris(image_path):
 
     # Apply the mask to the original image to get the segmented region
     segmented = cv2.bitwise_and(load_image, load_image, mask=mask_between)
-
+    segmented = detect_eyelids(segmented) #gets rid of eyelids 
     # Draw the detected circles for visualization
     draw_circle(load_image, (int(iris_circle[0]), int(iris_circle[1])), int(iris_circle[2]))
     draw_circle(load_image, (int(pupil_circle[0]), int(pupil_circle[1])), int(pupil_circle[2]))
@@ -325,4 +325,67 @@ def locate_iris(image_path):
     cv2.destroyAllWindows()"""
     return segmented, mask_between
 
-locate_iris('./database/091/1/091_1_1.bmp')
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+def fit_parabola(points):
+    if len(points) == 0:
+        return None  # No points to fit
+    x = points[:, 1]
+    y = points[:, 0]
+
+    # Fit a second-degree polynomial (parabola)
+    coefficients = np.polyfit(x, y, 2)
+    return coefficients  # Returns (a, b, c) for y = ax^2 + bx + c
+
+def detect_eyelids(segmented_iris):
+    original_image = segmented_iris.copy()  # Keep a copy of the original image
+    image = cv2.GaussianBlur(segmented_iris, (5, 5), 0)
+    edges = cv2.Canny(image, 50, 150)
+
+    height, width = edges.shape
+
+    upper_half = edges[0:int(height/2), :]
+    lower_half = edges[int(height/2):, :]
+    upper_edge_points = np.column_stack(np.nonzero(upper_half))
+    lower_edge_points = np.column_stack(np.nonzero(lower_half))
+
+    # Fit parabolas to the eyelids if edge points exist
+    parabola_upper = fit_parabola(upper_edge_points)
+    parabola_lower = fit_parabola(lower_edge_points)
+
+    # Create a mask with the same size as the original image
+    mask = np.ones((height, width), dtype=np.uint8) * 255  # Initialize mask with white
+
+    # Check if the upper eyelid parabola was found
+    if parabola_upper is not None:
+        a_upper, b_upper, c_upper = parabola_upper
+        for x in range(width):
+            y_upper = int(a_upper * x**2 + b_upper * x + c_upper)  # Upper eyelid parabola
+            if 0 <= y_upper < height // 2:
+                mask[0:y_upper, x] = 0  # Mask out region above upper eyelid
+
+    # Check if the lower eyelid parabola was found
+    if parabola_lower is not None:
+        a_lower, b_lower, c_lower = parabola_lower
+        for x in range(width):
+            y_lower = int(a_lower * x**2 + b_lower * x + c_lower)  # Lower eyelid parabola
+            if height // 2 <= y_lower < height:
+                mask[y_lower:, x] = 0  # Mask out region below lower eyelid
+
+    # Apply the mask to the original image
+    masked_image = cv2.bitwise_and(original_image, original_image, mask=mask)
+    return masked_image
+    # Show the masked image
+
+# Example usage
+# segmented_iris = cv2.imread('path_to_segmented_iris.jpg')
+# detect_eyelids(segmented_iris)
+
+
+
+
+
+
+locate_iris('./database/101/1/101_1_3.bmp')

@@ -259,6 +259,9 @@ def detect_pupil(image):
     # Adjust circle coordinates
     best_circle[0] += top_left_pupil[0]-50 #need to undo the padding and the shrinking
     best_circle[1] += top_left_pupil[1]-50
+    
+    
+    
     return best_circle, center1
 
 
@@ -286,44 +289,47 @@ def locate_iris(image_path):
     # Load and preprocess the image
     print(image_path)
     load_image, gray_image = load_and_preprocess_image(image_path)
-    """cv2.imshow('img', gray_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
+    
     # Detect the iris and pupil circles
     pupil_circle, pupil_center = detect_pupil(gray_image)
     iris_circle, iris_center = detect_iris(gray_image, pupil_circle)
     
     # Create a mask for the iris
     iris_mask = np.zeros(gray_image.shape[:2], dtype=np.uint8)
-    cv2.circle(iris_mask, (int(iris_circle[0]), int(iris_circle[1])), int(iris_circle[2]), 255, thickness=-1)  # White circle for iris
+    cv2.circle(iris_mask, (int(iris_circle[0]), int(iris_circle[1])), int(iris_circle[2]), 255, thickness=-1)
 
     # Create a mask for the pupil
     pupil_mask = np.zeros(gray_image.shape[:2], dtype=np.uint8)
-    cv2.circle(pupil_mask, (int(pupil_circle[0]), int(pupil_circle[1])), int(pupil_circle[2]), 255, thickness=-1)  # White circle for pupil
+    cv2.circle(pupil_mask, (int(pupil_circle[0]), int(pupil_circle[1])), int(pupil_circle[2]), 255, thickness=-1)
 
     # Subtract pupil mask from iris mask to get the desired region
     mask_between = cv2.subtract(iris_mask, pupil_mask)
 
     # Apply the mask to the original image to get the segmented region
     segmented = cv2.bitwise_and(load_image, load_image, mask=mask_between)
-    segmented = detect_eyelids(segmented) #gets rid of eyelids 
+    segmented = detect_eyelids(segmented)  # Removes eyelids
+    
+    # Define the bounding box size around the pupil center
+    box_size = int(iris_circle[2] * 2.5)  # Example: double the iris radius
+    x_center, y_center = pupil_circle[:2]
+
+    # Calculate crop boundaries centered on the pupil
+    x_start = max(int(x_center - box_size // 2), 0)
+    y_start = max(int(y_center - box_size // 2), 0)
+    x_end = min(x_start + box_size, load_image.shape[1])
+    y_end = min(y_start + box_size, load_image.shape[0])
+
+    # Crop the segmented image to this bounding box
+    centered_segmented = segmented[y_start:y_end, x_start:x_end]
+    """cv2.imshow('centered', centered_segmented)
+    cv2.imshow('notcentered', segmented)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()"""
     # Draw the detected circles for visualization
     draw_circle(load_image, (int(iris_circle[0]), int(iris_circle[1])), int(iris_circle[2]))
     draw_circle(load_image, (int(pupil_circle[0]), int(pupil_circle[1])), int(pupil_circle[2]))
 
-    # Show the segmented region between the iris and pupil
-    #cv2.imshow('Segmented Region Between Iris and Pupil', segmented)
-    
-    # Show the original image with detected circles
-    #cv2.imshow('Detected Circles', load_image)
-    
-    # Wait for a key press and close windows
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
-    """cv2.imshow('segmented', segmented)
-    cv2.waitKey()
-    cv2.destroyAllWindows()"""
-    return segmented, mask_between
+    return centered_segmented, mask_between
 
 import cv2
 import numpy as np
@@ -388,4 +394,4 @@ def detect_eyelids(segmented_iris):
 
 
 
-locate_iris('./database/101/1/101_1_3.bmp')
+locate_iris('./database/100/1/100_1_3.bmp')

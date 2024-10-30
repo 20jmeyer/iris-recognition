@@ -1,6 +1,9 @@
 import os
 import cv2
 import IrisLocalization
+import IrisNormalization
+from IrisNormalization import normalize_iris
+
 
 def load_images_from_folder(base_folder):
     images = {
@@ -37,6 +40,19 @@ def load_images_from_folder(base_folder):
     
     return images
 
+
+def create_output_dir(name, type):
+    """
+    Creates new output directories if they don't already exist
+    :param name: (str) Name of the new output folder
+    :param type: (str) 'train' or 'test
+    :return: None
+    """
+    path = f'./{name}/{type}'
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
 def main():
     base_folder = './database'  # Need to update to the correct path
     images = load_images_from_folder(base_folder)
@@ -45,23 +61,33 @@ def main():
     train_images = images['train']
     test_images = images['test']
 
-
-    output_path = './output/train'
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-    output_path = './output/test'
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    create_output_dir("localized_output", "train")
+    create_output_dir("localized_output", "test")
+    create_output_dir("norm_output", "train")
+    create_output_dir("norm_output", "test")
         
     for image in train_images:
+        # Localization
         iris, _ = IrisLocalization.locate_iris(image)
-        save_name =  './output/train/'+os.path.basename(image)[:-4] + '_iris.bmp'
+        save_name =  './localized_output/train/'+os.path.basename(image)[:-4] + '_iris.bmp'
         cv2.imwrite(save_name, iris)
+
+        # Normalization
+        norm_iris = IrisNormalization.normalize_iris(iris)
+        norm_name = './norm_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
+        cv2.imwrite(norm_name, norm_iris)
         
     for image in test_images:
+        # Localization
         iris, _ = IrisLocalization.locate_iris(image)
-        save_name =  './output/test/'+os.path.basename(image)[:-4] + '_iris.bmp'
+        save_name =  './localized_output/test/'+os.path.basename(image)[:-4] + '_iris.bmp'
         cv2.imwrite(save_name, iris)
+
+        # Normalization
+        norm_iris = IrisNormalization.normalize_iris(iris)
+        norm_name = './norm_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
+        cv2.imwrite(norm_name, norm_iris)
+
 main()
 
 

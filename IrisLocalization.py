@@ -292,7 +292,7 @@ def locate_iris(image_path):
     
     # Detect the iris and pupil circles
     pupil_circle, pupil_center = detect_pupil(gray_image)
-    iris_circle = naive_detect_iris(gray_image, pupil_circle)
+    iris_circle = naive_detect_iris(pupil_circle)
     #iris_circle, iris_center = detect_iris(gray_image, pupil_circle)
     
     # Create a mask for the iris
@@ -332,7 +332,7 @@ def locate_iris(image_path):
 
     return centered_segmented, mask_between
 
-def naive_detect_iris(image, pupil_circle):
+def naive_detect_iris(pupil_circle):
     iris_radius = pupil_circle[2] + 53
     iris_circle = (pupil_circle[0], pupil_circle[1], iris_radius)
     return iris_circle

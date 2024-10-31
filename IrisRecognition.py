@@ -2,7 +2,7 @@ import os
 import cv2
 import IrisLocalization
 import IrisNormalization
-from IrisNormalization import normalize_iris
+import ImageEnhancement
 
 
 def load_images_from_folder(base_folder):
@@ -65,6 +65,8 @@ def main():
     create_output_dir("localized_output", "test")
     create_output_dir("norm_output", "train")
     create_output_dir("norm_output", "test")
+    create_output_dir("enhanced_output", "train")
+    create_output_dir("enhanced_output", "test")
         
     for image in train_images:
         # Localization
@@ -76,6 +78,11 @@ def main():
         norm_iris = IrisNormalization.normalize_iris(iris)
         norm_name = './norm_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
         cv2.imwrite(norm_name, norm_iris)
+
+        # Enhancement
+        enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
+        enhanced_name = './enhanced_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
+        cv2.imwrite(enhanced_name, enhanced_iris)
         
     for image in test_images:
         # Localization
@@ -88,6 +95,10 @@ def main():
         norm_name = './norm_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
         cv2.imwrite(norm_name, norm_iris)
 
+        # Enhancement
+        enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
+        enhanced_name = './enhanced_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
+        cv2.imwrite(enhanced_name, enhanced_iris)
 main()
 
 

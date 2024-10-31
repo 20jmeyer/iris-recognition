@@ -4,6 +4,19 @@ import numpy as np
 import IrisLocalization  # for detect_pupil & naive_detect_iris
 
 
+def ensure_gray(img):
+    # Ensure image was loaded correctly and in grayscale
+    if img is None:
+        print("Error loading image. Check the path.")
+        sys.exit(1)
+    else:
+        if len(img.shape) == 3:
+            gray_mask = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_mask = img  # If already grayscale
+    return gray_mask
+
+
 def calc_boundary_point(theta, circle):
     # Calculate inner boundary point (x, y) at a given angle
     bound_x = circle[0] + circle[2] * np.cos(theta)
@@ -17,15 +30,7 @@ def normalize_iris(mask):
     :param mask: (nparray) localized iris mask image
     :return: (nparray) normalized iris image as type uint8
     """
-    # Ensure image was loaded correctly and in grayscale
-    if mask is None:
-        print("Error loading image. Check the path.")
-        sys.exit(1)
-    else:
-        if len(mask.shape) == 3:
-            gray_mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-        else:
-            gray_mask = mask  # If already grayscale
+    gray_mask = ensure_gray(mask)
 
     # Find iris and pupil boundaries (naively), circle info saved as: x_coord, y_coord, radius
     pupil_circle, _ = IrisLocalization.detect_pupil(gray_mask)  # aka inner_bound
@@ -63,16 +68,17 @@ def normalize_iris(mask):
     return normalized_iris.astype(np.uint8)
 
 
-# def main():
-#     # Load isolated iris
-#     mask_path = "./localized_output/train/044_1_2_iris.bmp"
-#     mask = cv2.imread(mask_path)
-#
-#     norm_iris = normalize_iris(mask)
-#
-#     cv2.imshow('Localized iris', mask)
-#     cv2.imshow('Normalized iris',norm_iris)
-#     cv2.waitKey(0)
-#     cv2.destroyAllWindows()
-#
-# main()
+def main():
+    # Load isolated iris
+    mask_path = "./localized_output/train/003_1_1_iris.bmp"
+    mask = cv2.imread(mask_path)
+
+    norm_iris = normalize_iris(mask)
+
+    cv2.imshow('Localized iris', mask)
+    cv2.imshow('Normalized iris',norm_iris)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()

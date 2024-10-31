@@ -2,3 +2,6 @@ database
 .DS_Store
 __pycache__
 output
+norm_output
+localized_output
+enhanced_output

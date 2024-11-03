@@ -18,12 +18,19 @@ the normalized iris images were enhanced. Enhancement was done using histogram e
 
 ## Peer evaluation: 
 IrisRecognition - Jake, Ellise, Nicole collaboration  
+
 IrisLocalization - Jake
+
 IrisNormalization - Ellise
+
 ImageEnhancement - Ellise
+
 FeatureExtraction - Nicole
+
 IrisMatching  - Nicole
+
 PerformanceEvaluation - Jake
+
 Readme File - Jake, Ellise, Nicole collaboration 
 
 ## Reference: 

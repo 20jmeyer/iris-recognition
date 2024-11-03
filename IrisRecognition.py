@@ -9,106 +9,91 @@ import ImageEnhancement
 import FeatureExtraction
 import IrisMatching 
 import PerformanceEvaluation
-
-
-def load_images_from_folder(base_folder):
-    images = {
-        'train': [],
-        'test': []
-    }
-    
-    # Iterate over each subject folder in the base folder
-    for subject in os.listdir(base_folder):
-        subject_path = os.path.join(base_folder, subject)
-        
-        # Check if the subject path is a directory
-        if os.path.isdir(subject_path):
-            # paths for training and testing folders
-            train_folder = os.path.join(subject_path, '1')
-            test_folder = os.path.join(subject_path, '2')
-            
-            # training images
-            if os.path.isdir(train_folder):
-                for image_name in os.listdir(train_folder):
-                    if image_name.endswith('.bmp'):
-                        #print(image_name)
-                        image_path = os.path.join(train_folder, image_name)
-                        image = cv2.imread(image_path)
-                        images['train'].append(image_path)
-            
-            # testing images
-            if os.path.isdir(test_folder):
-                for image_name in os.listdir(test_folder):
-                    if image_name.endswith('.bmp'):
-                        image_path = os.path.join(test_folder, image_name)
-                        image = cv2.imread(image_path)
-                        images['test'].append(image_path)
-    
-    return images
-
-
-def create_output_dir(name, type):
-    """
-    Creates new output directories if they don't already exist
-    :param name: (str) Name of the new output folder
-    :param type: (str) 'train' or 'test
-    :return: None
-    """
-    path = f'./{name}/{type}'
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-
-def extract_labels(image_names):
-    """
-    Returns the label values given the image names
-    """
-    return [int(re.findall('\d{3}', x)[0]) for x in image_names]
-
+from utils import extract_labels,create_output_dir,load_features,save_features,load_images_from_folder
 
 def main():
     base_folder = './database'  # Need to update to the correct path
-    images = load_images_from_folder(base_folder)
+    train_features_path = './train_features.pkl'
+    test_features_path = './test_features.pkl'
+    print("Running iris recognition...")
+    ###
+    ### To save time, I added the option to just load the features
+    ###
+    if os.path.exists(train_features_path) and os.path.exists(test_features_path): #set this to false to process all images
+        # Load saved features
+        print("Loading features from saved files...")
+        train_features, train_labels = load_features(train_features_path)
+        test_features, test_labels = load_features(test_features_path)
+    else:
+        print("Processing images...")   
+        images = load_images_from_folder(base_folder)
 
-    # Access training and testing images
-    train_images = images['train']
-    test_images = images['test']
+        # Access training and testing images
+        train_images = images['train']
+        test_images = images['test']
+        # Extract the labels from the train and test images using the file names
+        train_labels = extract_labels(train_images)
+        test_labels = extract_labels(test_images)
 
-    # Extract the labels from the train and test images using the file names
-    train_labels = extract_labels(train_images)
-    test_labels = extract_labels(test_images)
+        create_output_dir("localized_output", "train")
+        create_output_dir("localized_output", "test")
+        create_output_dir("norm_output", "train")
+        create_output_dir("norm_output", "test")
+        create_output_dir("enhanced_output", "train")
+        create_output_dir("enhanced_output", "test")
+        
+        train_features = []
+        for image in train_images:
+            # Localization
+            iris, _ = IrisLocalization.locate_iris(image)
+            save_name =  './localized_output/train/'+os.path.basename(image)[:-4] + '_iris.bmp'
+            cv2.imwrite(save_name, iris)
 
-    create_output_dir("localized_output", "train")
-    create_output_dir("localized_output", "test")
-    create_output_dir("norm_output", "train")
-    create_output_dir("norm_output", "test")
-    create_output_dir("enhanced_output", "train")
-    create_output_dir("enhanced_output", "test")
-    
-    train_features = []
-    for image in train_images:
-        # Localization
-        iris, _ = IrisLocalization.locate_iris(image)
-        save_name =  './localized_output/train/'+os.path.basename(image)[:-4] + '_iris.bmp'
-        cv2.imwrite(save_name, iris)
+            # Normalization
+            print("Normalizing images...")
+            norm_iris = IrisNormalization.normalize_iris(iris)
+            norm_name = './norm_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
+            cv2.imwrite(norm_name, norm_iris)
 
-        # Normalization
-        norm_iris = IrisNormalization.normalize_iris(iris)
-        norm_name = './norm_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
-        cv2.imwrite(norm_name, norm_iris)
+            # Enhancement
+            print("Enhancing images...")
+            enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
+            enhanced_name = './enhanced_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
+            cv2.imwrite(enhanced_name, enhanced_iris)
 
-        # Enhancement
-        enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
-        enhanced_name = './enhanced_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
-        cv2.imwrite(enhanced_name, enhanced_iris)
+            # Feature Extraction
+            print("Extracting features...")
+            extracted_features = FeatureExtraction.feature_iris(enhanced_iris)
+            train_features.append(extracted_features)
 
-        # Feature Extraction
-        extracted_features = FeatureExtraction.feature_iris(enhanced_iris)
-        train_features.append(extracted_features)
+        test_features = []
+        for i, image in enumerate(test_images):
+            # Localization
+            iris, _ = IrisLocalization.locate_iris(image)
+            save_name =  './localized_output/test/'+os.path.basename(image)[:-4] + '_iris.bmp'
+            cv2.imwrite(save_name, iris)
+
+            # Normalization
+            norm_iris = IrisNormalization.normalize_iris(iris)
+            norm_name = './norm_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
+            cv2.imwrite(norm_name, norm_iris)
+
+            # Enhancement
+            enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
+            enhanced_name = './enhanced_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
+            cv2.imwrite(enhanced_name, enhanced_iris)
+
+            # Feature Extraction
+            extracted_features = FeatureExtraction.feature_iris(enhanced_iris)
+            test_features.append(extracted_features)
+
+        train_features = np.array(train_features)
+        test_features = np.array(test_features)
+        save_features(train_features, train_labels, train_features_path)
+        save_features(test_features, test_labels, test_features_path)
+
 
     # Fitting the dimension reduction model
-    train_features = np.array(train_features)
-
     model, class_centers = IrisMatching.reduce_dimensionality(
         train_features, train_labels, n_components=None
     )
@@ -134,38 +119,14 @@ def main():
         cosine_train_class_reduced, cosine_train_probability_reduced = IrisMatching.match_iris(
             feature, class_centers, reduced_class_centers, reduced_model, distance_type='cosine'
         )
-
-
-    test_features = []
-    for i, image in enumerate(test_images):
-        # Localization
-        iris, _ = IrisLocalization.locate_iris(image)
-        save_name =  './localized_output/test/'+os.path.basename(image)[:-4] + '_iris.bmp'
-        cv2.imwrite(save_name, iris)
-
-        # Normalization
-        norm_iris = IrisNormalization.normalize_iris(iris)
-        norm_name = './norm_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
-        cv2.imwrite(norm_name, norm_iris)
-
-        # Enhancement
-        enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
-        enhanced_name = './enhanced_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
-        cv2.imwrite(enhanced_name, enhanced_iris)
-
-        # Feature Extraction
-        extracted_features = FeatureExtraction.feature_iris(enhanced_iris)
-        test_features.append(extracted_features)
-        
-    thresholds = [0.446, 0.472, 0.502]
-    fmr = []
-    fnmr = []
+    
     dimensions = [30, 60, 80, 100, 107] #Different number of dimensions to try
 
-    # Match Iris for the 3 distance measures
-    test_features = np.array(test_features)
-
     CRR_RESULTS = []
+    
+    COSINE_SIMILARITY = None
+    COSINE_PREDS = None
+    
     for dimension_target in dimensions:
         
         reduced_model, reduced_class_centers = IrisMatching.reduce_dimensionality(
@@ -176,38 +137,64 @@ def main():
         crr_l2 = []
         crr_cosine = []
 
+        cosine_similarity = []
+        cosine_preds = []
 
         for i, feature in enumerate(test_features):
             
-            L1_test_features, L1_test_class, L1_test_probability, \
-            L1_test_features_reduced, L1_test_class_reduced, L1_test_probability_reduced = IrisMatching.match_iris(
+            L1_test_features, L1_test_class, L1_test_similarity, \
+            L1_test_features_reduced, L1_test_class_reduced, L1_test_similarity_reduced = IrisMatching.match_iris(
                 feature, class_centers, reduced_class_centers, reduced_model, distance_type='L1'
             )
             crr_l1.append(L1_test_class_reduced)
 
-            L2_test_features, L2_test_class, L2_test_probability, L2_test_features_reduced, \
-            L2_test_class_reduced, L2_test_probability_reduced = IrisMatching.match_iris(
+            L2_test_features, L2_test_class, L2_test_similarity, L2_test_features_reduced, \
+            L2_test_class_reduced, L2_test_similarity_reduced = IrisMatching.match_iris(
                 feature, class_centers, reduced_class_centers, reduced_model, distance_type='L2'
             )
             crr_l2.append(L2_test_class_reduced)
             
             
-            cosine_test_features, cosine_test_class, cosine_test_probability, cosine_test_features_reduced, \
-            cosine_test_class_reduced, cosine_test_probability_reduced = IrisMatching.match_iris(
+            cosine_test_features, cosine_test_class, cosine_test_similarity, cosine_test_features_reduced, \
+            cosine_test_class_reduced, cosine_test_similarity_reduced = IrisMatching.match_iris(
                 feature, class_centers, reduced_class_centers, reduced_model, distance_type='cosine'
             )
             crr_cosine.append(cosine_test_class_reduced)
+
+            cosine_similarity.append(cosine_test_similarity)
+            cosine_preds.append(cosine_test_class)
         
+        # Calculating the correct recognition rate for each type of similarity
         crr_l1 = PerformanceEvaluation.CRR(crr_l1, test_labels)
         crr_l2 = PerformanceEvaluation.CRR(crr_l2, test_labels)
         crr_cosine = PerformanceEvaluation.CRR(crr_cosine, test_labels)
         CRR_RESULTS.append([crr_l1, crr_l2, crr_cosine])
 
+        COSINE_SIMILARITY = cosine_similarity
+        COSINE_PREDS = cosine_preds
+
+    # Formatting the CRR results
     CRR_RESULTS = pd.DataFrame(CRR_RESULTS, columns=['crr_l1', 'crr_l2', 'crr_cosine'])
     CRR_RESULTS['dimensions'] = dimensions
     CRR_RESULTS = CRR_RESULTS.set_index('dimensions')
 
     PerformanceEvaluation.plot_CRR_curves(CRR_RESULTS)
-main()
+    
+    #FNMR vs FMR
+    fmr_list = []
+    fnmr_list = []
+    thresholds = [0.446, 0.472, 0.502] 
+
+    for threshold in thresholds:
+        fmr, fnmr = PerformanceEvaluation.false_rate(COSINE_SIMILARITY, test_labels, threshold, COSINE_PREDS)
+        fmr_list.append(fmr)
+        fnmr_list.append(fnmr)
+        
+    PerformanceEvaluation.plot_ROC(fmr, fnmr)
+        
+        
+if __name__ == "__main__":    
+    main()
+
 
 

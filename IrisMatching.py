@@ -71,9 +71,9 @@ def compute_nearest_center(reduced_feature, class_centers, distance_type='L2'):
     # Find the predicted class and its probability
     best_index = np.argmax(probabilities)
     predicted_class = labels[best_index]
-    predicted_probability = probabilities[best_index]
+    similarity = values[best_index]
 
-    return predicted_class, predicted_probability
+    return predicted_class, similarity
 
 
 def match_iris(feature, class_centers, reduced_class_centers, model, 
@@ -115,10 +115,10 @@ def match_iris(feature, class_centers, reduced_class_centers, model,
         reduced_rotated_feature = model.transform([rotated_feature])[0]
 
         # Perform nearest center for both the original and reduced rotations
-        predicted_class, predicted_probability = compute_nearest_center(
+        predicted_class, predicted_similarity = compute_nearest_center(
             rotated_feature, class_centers, distance_type
         )
-        reduced_predicted_class, reduced_predicted_probability = compute_nearest_center(
+        reduced_predicted_class, reduced_predicted_similarity = compute_nearest_center(
             reduced_rotated_feature, reduced_class_centers, distance_type
         )
 
@@ -130,15 +130,15 @@ def match_iris(feature, class_centers, reduced_class_centers, model,
         if distance < min_score:
             min_score = distance
             best_class = predicted_class
-            best_probability = predicted_probability
+            best_similarity = predicted_similarity
             best_rotated_feature = rotated_feature
 
         if reduced_distance < reduced_min_score:
             reduced_min_score = reduced_distance
             reduced_best_class = reduced_predicted_class
-            reduced_best_probability = reduced_predicted_probability
+            reduced_best_similarity = reduced_predicted_similarity
             reduced_best_rotated_feature = reduced_rotated_feature
 
-    return best_rotated_feature, best_class, best_probability, reduced_best_rotated_feature, reduced_best_class, reduced_best_probability
+    return best_rotated_feature, best_class, best_similarity, reduced_best_rotated_feature, reduced_best_class, reduced_best_similarity
 
 

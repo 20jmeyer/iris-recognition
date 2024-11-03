@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import math
 from scipy.spatial import distance
+import matplotlib.pyplot as plt
 
 # Function to load and preprocess the image
 def load_and_preprocess_image(image_path):
@@ -65,7 +66,7 @@ def find_thresholded_subimage(image, center, lower_bound, upper_bound, size=120,
             mean_brightness = np.mean(subimage)
             #print(mean_brightness)
             if mean_brightness >= 132:
-                print("making darker")
+                #print("making darker")
                 subimage = adjust_gamma(subimage, gamma=.6)
                 """cv2.imshow('before', subimage)
                 cv2.waitKey(0)
@@ -287,7 +288,7 @@ def detect_pupil_and_iris(image_path):
 # Main function to locate the iris region between the iris and pupil circles
 def locate_iris(image_path):
     # Load and preprocess the image
-    print(image_path)
+    #print(image_path)
     load_image, gray_image = load_and_preprocess_image(image_path)
     
     # Detect the iris and pupil circles
@@ -337,10 +338,6 @@ def naive_detect_iris(pupil_circle):
     iris_circle = (pupil_circle[0], pupil_circle[1], iris_radius)
     return iris_circle
     
-
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
 
 def fit_parabola(points):
     if len(points) == 0:
@@ -395,10 +392,3 @@ def detect_eyelids(segmented_iris):
 # Example usage
 # segmented_iris = cv2.imread('path_to_segmented_iris.jpg')
 # detect_eyelids(segmented_iris)
-
-
-
-
-
-
-locate_iris('./database/100/1/100_1_3.bmp')

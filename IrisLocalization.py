@@ -6,13 +6,44 @@ import matplotlib.pyplot as plt
 
 # Function to load and preprocess the image
 def load_and_preprocess_image(image_path):
+    """
+    Loads an image from the specified file path and applies preprocessing steps.
+
+    This function reads the image, converts it to grayscale, and applies Gaussian blurring
+    to reduce noise and smoothen the image, which helps in mitigating interference from features
+    like eyelashes when detecting the pupil.
+
+    Parameters:
+    image_path (str): Path to the image file.
+
+    Returns:
+    tuple:
+        - image (numpy.ndarray): The original color image as loaded.
+        - gray_image (numpy.ndarray): The preprocessed grayscale image.
+    """
     image = cv2.imread(image_path)
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # (5, 5): Size of the Gaussian kernel. This is the width and height of the kernel. A larger kernel produces a stronger blur effect.
+    # sigmaX: Standard deviation in the X direction. Since it's set to 0 the function will calculate the standard deviation based on the kernel size. A larger value results in more blurring.    
     gray_image = cv2.GaussianBlur(gray_image, (5, 5), 0) #Helps to deal with eyelashes
     return image, gray_image
 
 # Function to calculate projections and estimate pupil center
 def estimate_pupil_center(image):
+    """
+    Estimates the center of the pupil in a grayscale image.
+
+    This function calculates the horizontal and vertical projections of pixel intensity values
+    across the rows and columns of the image. The coordinates with the minimum sum in each
+    projection are assumed to be the approximate center of the pupil, where the pixel intensity
+    is typically darkest.
+
+    Parameters:
+    image (numpy.ndarray): The input grayscale image in which to estimate the pupil center.
+
+    Returns:
+    tuple: (x_center, y_center), the estimated coordinates of the pupil center.
+    """
     horizontal_projection = np.sum(image, axis=1)  # Sum of rows
     vertical_projection = np.sum(image, axis=0)    # Sum of columns
     y_center = np.argmin(horizontal_projection)      # Y coordinate of initial estimated pupil center
@@ -21,6 +52,23 @@ def estimate_pupil_center(image):
 
 #Function to adjust gamma (I used this to darken certain parts of the image to help with thresholding)
 def adjust_gamma(image, gamma=1.5):
+    """
+    Apply gamma correction to adjust the brightness of an image.
+
+    This function adjusts the brightness of an image by applying gamma correction.
+    It builds a lookup table that maps each pixel intensity to its gamma-adjusted 
+    value and then uses this table to modify the pixel values. Gamma values greater 
+    than 1 make the image darker, while values less than 1 make the image lighter. 
+    I used this to enhance the darker parts of the image
+    to improve thresholding for the pupil detection.
+
+    Parameters:
+    image (numpy.ndarray): Grayscale or color image to be gamma-corrected.
+    gamma (float): Gamma correction factor. Values >1 darken the image; values <1 lighten it.
+
+    Returns:
+    numpy.ndarray: The gamma-corrected image with adjusted brightness.
+    """
     # Build a lookup table mapping pixel values [0, 255] to their adjusted gamma values
     inv_gamma = 1.0 / gamma
     table = np.array([(i / 255.0) ** inv_gamma * 255 for i in np.arange(256)]).astype("uint8")    
@@ -29,6 +77,25 @@ def adjust_gamma(image, gamma=1.5):
 
 #Another function to try to darken certain parts of the image (used this to help with pupil thresholding)
 def darken_blacks(image, threshold_value=50, darkening_factor=0.5):
+    """
+    Darken regions of an image with pixel intensities below a specified threshold.
+
+    This function creates a mask for dark pixels in the image (those with intensity 
+    values below the specified `threshold_value`). It then darkens these pixels 
+    by applying a `darkening_factor`, which reduces their intensity further. I used 
+    this to for enhance contrast in darker regions of the image 
+    for improved pupil thresholding.
+
+    Parameters:
+    image (numpy.ndarray): Grayscale image where pixel intensities will be adjusted.
+    threshold_value (int): Intensity threshold; pixels below this value will be darkened.
+    darkening_factor (float): Factor by which to darken the pixel intensities 
+                              (0 < darkening_factor <= 1).
+
+    Returns:
+    numpy.ndarray: The image with darkened regions, with pixels below the threshold 
+                   adjusted in intensity.
+    """
     # Create a mask for pixels below the threshold (i.e., dark pixels)
     mask = image < threshold_value
 
@@ -41,7 +108,7 @@ def darken_blacks(image, threshold_value=50, darkening_factor=0.5):
 # Function to find a thresholded sub-image around the estimated center
 def find_thresholded_subimage(image, center, lower_bound, upper_bound, size=120, is_pupil=True, repeat=False):
     """
-    Find a thresholded sub-image around the estimated center.
+    Finds a thresholded sub-image around the estimated center.
 
     This function extracts a square sub-image from the given image based on the specified center coordinates.
     It applies various image processing techniques, including Gaussian blur, contrast-limited adaptive histogram equalization (CLAHE),
@@ -98,17 +165,29 @@ def find_thresholded_subimage(image, center, lower_bound, upper_bound, size=120,
         kernel = np.ones((5, 5), np.uint8) 
 
         iters = 3 if repeat else 1  #Morphological operations to try to get rid of the eyelashes
+        # Apply dilation to expand white regions
+        # thresh: Input binary or grayscale image to be dilated.
+        # kernel: Structuring element (matrix) that defines the shape and size of the dilation operation.
+        # iterations: Number of times the dilation is applied; higher values will expand the white regions more.
         thresh = cv2.dilate(thresh, kernel, iterations=iters)
         thresh = cv2.erode(thresh, kernel, iterations=iters)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
 
     else: 
         subimage = cv2.equalizeHist(subimage)
+        # `clipLimit`: The threshold for contrast limiting. It determines how much the histogram will be clipped to limit the amplification of noise. A higher value allows more contrast, while a lower value reduces the chance of over-amplification.
+        # `tileGridSize`: The size of the grid for the tiles used in the adaptive histogram equalization. The image will be divided into tiles of this size, and CLAHE will be applied to each tile separately. Smaller tile sizes allow for better local contrast
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
     
         # Apply CLAHE (contrast increaser) to the grayscale image
         subimage = clahe.apply(subimage)
-        ret, thresh = cv2.threshold(subimage,lower_bound,upper_bound,cv2.THRESH_BINARY) #Thresholds the image
+        # subimage: Input grayscale image to which the thresholding will be applied.
+        # lower_bound: The lower threshold value. Pixels with intensity values below this will be set to 0 (black).
+        # upper_bound: The upper threshold value. Pixels with intensity values above this will be set to 255 (white).
+        # cv2.THRESH_BINARY: Specifies the type of thresholding to be applied. In this case, it's binary thresholding,
+        # where pixel values are set to either the maximum value (255) or to 0, based on the defined bounds.
+        ret, thresh = cv2.threshold(subimage,lower_bound,upper_bound,cv2.THRESH_BINARY) #Thresholds the image into a binary image
     
     # Calculating the centroid of the binary image
     M = cv2.moments(thresh)

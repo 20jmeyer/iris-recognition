@@ -5,7 +5,7 @@ from scipy.spatial import distance
 
 # Function to load and preprocess the image
 def load_and_preprocess_image(image_path):
-    print(image_path)
+    #print(image_path)
     image = cv2.imread(image_path)
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     #gray_image = cv2.bilateralFilter(gray_image,9,75, 75)

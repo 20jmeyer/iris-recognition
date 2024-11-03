@@ -18,7 +18,7 @@ def reduce_dimensionality(features, labels, n_components=100):
     """
 
     # Fit the LDA model
-    model = LinearDiscriminantAnalysis(n_components=n_components)
+    model = LinearDiscriminantAnalysis(n_components=n_components, solver='eigen', shrinkage='auto')
     model.fit(features, labels)
     reduced_features = model.transform(features)
 

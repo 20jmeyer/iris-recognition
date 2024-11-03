@@ -2,11 +2,13 @@ import os
 import re
 import cv2
 import numpy as np
+import pandas as pd
 import IrisLocalization
 import IrisNormalization
 import ImageEnhancement
 import FeatureExtraction
 import IrisMatching 
+import PerformanceEvaluation
 
 
 def load_images_from_folder(base_folder):
@@ -103,29 +105,7 @@ def main():
         # Feature Extraction
         extracted_features = FeatureExtraction.feature_iris(enhanced_iris)
         train_features.append(extracted_features)
-
-    # Fitting the dimension reduction model
-    train_features = np.array(train_features)
-    model, class_centers = IrisMatching.reduce_dimensionality(
-        train_features, train_labels, n_components=100
-    )
-
-    # Match Iris for the 3 distance measures
-    for i, feature in enumerate(train_features):
-
-        L1_train_features, L1_train_reduced_features, L1_train_class, L1_train_probability = IrisMatching.match_iris(
-            feature, class_centers, model, distance_type='L2'
-        )
-
-        L2_train_features, L2_train_reduced_features, L2train_class, L2_train_probability = IrisMatching.match_iris(
-            feature, class_centers, model, distance_type='L2'
-        )
-
-        cosine_train_features, cosine_train_reduced_features, cosine_train_class, cosine_train_probability = IrisMatching.match_iris(
-            feature, class_centers, model, distance_type='L2'
-        )
-
-
+        
     test_features = []
     for i, image in enumerate(test_images):
         # Localization
@@ -146,24 +126,62 @@ def main():
         # Feature Extraction
         extracted_features = FeatureExtraction.feature_iris(enhanced_iris)
         test_features.append(extracted_features)
+        
+
+    # Fitting the dimension reduction model
+    train_features = np.array(train_features)
 
 
-    # Match Iris for the 3 distance measures
-    test_features = np.array(test_features)
-    for i, feature in enumerate(test_features):
-
-        L1_test_features, L1_test_reduced_features, L1_test_class, L1_test_probability = IrisMatching.match_iris(
-            feature, class_centers, model, distance_type='L1'
+    crr_l1 = []
+    crr_l2 = []
+    crr_cosine = []
+    
+    thresholds = [0.446, 0.472, 0.502]
+    fmr = []
+    fnmr = []
+    print("test labels", test_labels)
+    dimensions = [30, 60, 80, 100, 108] #Different number of dimensions to try
+    
+    for dimension_target in dimensions:
+        model, class_centers = IrisMatching.reduce_dimensionality(
+            train_features, train_labels, n_components=dimension_target
         )
 
-        L2_test_features, L2_test_reduced_features, L2_test_class, L2_test_probability = IrisMatching.match_iris(
-            feature, class_centers, model, distance_type='L2'
-        )
+        # Match Iris for the 3 distance measures (train set)
+        for i, feature in enumerate(train_features):
 
-        cosine_test_features, cosine_test_reduced_features, cosine_test_class, cosine_test_probability = IrisMatching.match_iris(
-            feature, class_centers, model, distance_type='cosine'
-        )
+            L1_train_features, L1_train_reduced_features, L1_train_class, L1_train_probability = IrisMatching.match_iris(
+                feature, class_centers, model, distance_type='L2'
+            )
 
+            L2_train_features, L2_train_reduced_features, L2train_class, L2_train_probability = IrisMatching.match_iris(
+                feature, class_centers, model, distance_type='L2'
+            )
+
+            cosine_train_features, cosine_train_reduced_features, cosine_train_class, cosine_train_probability = IrisMatching.match_iris(
+                feature, class_centers, model, distance_type='L2'
+            )
+            
+        # Match Iris for the 3 distance measures (test set)
+        test_features = np.array(test_features)
+        for i, feature in enumerate(test_features):
+
+            L1_test_features, L1_test_reduced_features, L1_test_class, L1_test_probability = IrisMatching.match_iris(
+                feature, class_centers, model, distance_type='L1'
+            )
+            crr_l1.append(PerformanceEvaluation.CRR(L1_test_class,test_labels))
+            
+            L2_test_features, L2_test_reduced_features, L2_test_class, L2_test_probability = IrisMatching.match_iris(
+                feature, class_centers, model, distance_type='L2'
+            )
+            crr_l2.append(PerformanceEvaluation.CRR(L2_test_class,test_labels))
+            
+            cosine_test_features, cosine_test_reduced_features, cosine_test_class, cosine_test_probability = IrisMatching.match_iris(
+                feature, class_centers, model, distance_type='cosine'
+            )
+            crr_cosine.append(PerformanceEvaluation.CRR(cosine_test_class,test_labels))
+    crr_results = pd.DataFrame({'dimensions': dimensions, 'crr_l1': crr_l1, 'crr_l2': crr_l2, 'crr_cosine': crr_cosine})
+    PerformanceEvaluation.plot_CRR_curve(crr_results)
 main()
 
 

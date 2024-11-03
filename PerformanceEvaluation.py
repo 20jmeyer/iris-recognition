@@ -34,4 +34,4 @@ def plot_CRR_curves(results):
     
     
 def false_rate(score, labels, threshold, preds):
-    
+    pass

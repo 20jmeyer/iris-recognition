@@ -18,11 +18,12 @@ the normalized iris images were enhanced. Enhancement was done using histogram e
 
 ## Limitation(s) of the current design:
 
-Iris detection is not very smart due to the concentric circles assumption. We could make improvements
-on locating the iris using the same thresholding/Canny edge/Hough circle method with better parameters or
-improved image processing to help with the noise.
+Iris detection is not very smart due to the concentric circles assumption.
 
 ## Improvements:
+
+We could make improvements on locating the iris using the same thresholding/Canny edge/Hough
+circle method with better parameters or improved image processing to help with the noise.
 
 ## Peer evaluation:
 

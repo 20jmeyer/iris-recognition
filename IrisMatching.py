@@ -65,7 +65,7 @@ def compute_nearest_center(reduced_feature, class_centers, distance_type='L2'):
     if distance_type != 'cosine':
         similarities = {label: 1 / (dist + 1e-8) for label, dist in distances.items()} 
     else:
-        similarities = {label: 1 / dist for label, dist in distances.items()} 
+        similarities = {label: dist for label, dist in distances.items()} 
 
     # Use the distance similarities to calculate a softmax score, which we can use for the ROC curve
     labels, values = zip(*similarities.items())

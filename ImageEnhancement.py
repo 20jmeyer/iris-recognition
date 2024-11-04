@@ -13,21 +13,23 @@ def enhance_iris_basic(norm_iris):
 
 def enhance_iris(norm_iris):
     norm_iris = IrisNormalization.ensure_gray(norm_iris)
-
+    size = 16
+    pixel_sums = np.zeros((16, 16))
+    num_blocks = 0
     # Estimate background illumination by finding mean of 16x16 blocks
     background_est = np.zeros_like(norm_iris, dtype=np.float32)
-    size = 16
+    
     for y in range(0, norm_iris.shape[0], size):
         for x in range(0, norm_iris.shape[1], size):
             block = norm_iris[y:y + size, x:x + size]
-            block_mean = np.mean(block)
-            background_est[y:y + size, x:x + size] = block_mean
-
+            pixel_sums += block
+            num_blocks += 1
+    pixel_averages = pixel_sums / num_blocks
     # Expand using bicubic interpolation
-    background_est = cv2.resize(background_est, (norm_iris.shape[1], norm_iris.shape[0]), interpolation=cv2.INTER_CUBIC)
+    background_est = cv2.resize(pixel_averages, (norm_iris.shape[1], norm_iris.shape[0]), interpolation=cv2.INTER_CUBIC)
 
     # Subtract estimated background illumination from the normalized image
-    light_compensated = cv2.subtract(norm_iris.astype(np.float32), background_est)
+    light_compensated = cv2.subtract(norm_iris.astype(np.float32), background_est.astype(np.float32))
     light_compensated = np.clip(light_compensated, 0, 255).astype(np.uint8)
 
     # Enhance lighting corrected image through histogram equalization in each 32x32 region

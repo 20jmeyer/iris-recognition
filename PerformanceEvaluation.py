@@ -54,25 +54,24 @@ def false_rate(similarity, labels, threshold, preds):
     labels = np.array(labels)
     preds = np.array(preds)
 
-    # Determine matches based on the threshold
-    matches = similarity < threshold
 
-    # Calculate FMR (false positives) where preds match but labels do not
-    false_matches = (matches & (labels != preds)).sum()
-    total_non_matches = (labels != preds).sum()
-    false_match_rate = false_matches / total_non_matches if total_non_matches > 0 else 0
+    # FMR: False positives where similarity < threshold but labels == preds (should reject but accepted)
+    false_matches = (similarity > threshold) & (labels == preds)
+    false_match_rate = false_matches.mean()*100
 
-    # Calculate FNMR (false negatives) where labels match but preds do not
-    false_non_matches = (~matches & (labels == preds)).sum()
-    total_matches = (labels == preds).sum()
-    false_non_match_rate = false_non_matches / total_matches if total_matches > 0 else 0
+    # FNMR: False negatives where similarity >= threshold but labels != preds (should accept but rejected)
+    false_non_matches = (similarity <= threshold) & (labels != preds)
+    false_non_match_rate = false_non_matches.mean()*100
+
 
     return false_match_rate, false_non_match_rate
 
+
+
 def plot_ROC(fmr, fnmr):
     plt.plot(fmr, fnmr, marker='o', linestyle='-', color='b', label='ROC Curve')
-    plt.xlabel('False Match Rate (FMR)')
-    plt.ylabel('False Non-Match Rate (FNMR)')
+    plt.xlabel('False Match Rate (%) ')
+    plt.ylabel('False Non-Match Rate (%)')
     plt.title('ROC Curve')
     plt.legend()
     

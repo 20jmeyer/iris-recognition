@@ -44,6 +44,7 @@ def main():
         create_output_dir("enhanced_output", "test")
         
         train_features = []
+        print("Processing training images...")
         for image in train_images:
             # Localization
             iris, _ = IrisLocalization.locate_iris(image)
@@ -51,23 +52,21 @@ def main():
             cv2.imwrite(save_name, iris)
 
             # Normalization
-            print("Normalizing images...")
             norm_iris = IrisNormalization.normalize_iris(iris)
             norm_name = './norm_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
             cv2.imwrite(norm_name, norm_iris)
 
             # Enhancement
-            print("Enhancing images...")
             enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
             enhanced_name = './enhanced_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
             cv2.imwrite(enhanced_name, enhanced_iris)
 
             # Feature Extraction
-            print("Extracting features...")
             extracted_features = FeatureExtraction.feature_iris(enhanced_iris)
             train_features.append(extracted_features)
 
         test_features = []
+        print("Processing test images...")
         for i, image in enumerate(test_images):
             # Localization
             iris, _ = IrisLocalization.locate_iris(image)

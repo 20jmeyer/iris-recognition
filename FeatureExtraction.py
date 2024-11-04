@@ -87,7 +87,7 @@ def feature_iris(enhanced_iris):
     roi = enhanced_iris[:48, :] 
 
     # Apply the spatial filters in two domains
-    filtered_image_1 = apply_spatial_filter(roi, sigma_x=3, sigma_y=1.5, f=1/8)
+    filtered_image_1 = apply_spatial_filter(roi, sigma_x=3, sigma_y=1.5, f=1/4)
     filtered_image_2 = apply_spatial_filter(roi, sigma_x=4.5, sigma_y=1.5, f=1/16)
 
     # After filtering, extract the feature vectors

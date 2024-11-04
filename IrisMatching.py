@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from scipy.spatial.distance import cityblock, euclidean, cosine
 from scipy.special import softmax
+from sklearn.decomposition import PCA
 
 
 def reduce_dimensionality(features, labels, n_components=None):
@@ -17,7 +18,6 @@ def reduce_dimensionality(features, labels, n_components=None):
         np.ndarray, np.ndarray: The LDA model and a dictionary containing class centers
     """
 
-    # Initialize the LDA model
     model = LinearDiscriminantAnalysis(n_components=n_components, solver='eigen', shrinkage='auto')
     model.fit(features, labels)
 

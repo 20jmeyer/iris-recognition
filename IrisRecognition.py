@@ -9,6 +9,7 @@ import ImageEnhancement
 import FeatureExtraction
 import IrisMatching 
 import PerformanceEvaluation
+
 from utils import extract_labels,create_output_dir,load_features,save_features,load_images_from_folder
 
 def main():
@@ -107,7 +108,7 @@ def main():
 
         L1_train_features, L1_train_class, L1_train_probability, L1_train_features_reduced, \
         L1_train_class_reduced, L1_train_probability_reduced = IrisMatching.match_iris(
-            feature, class_centers, reduced_class_centers,reduced_model, distance_type='L1'
+            feature, class_centers, reduced_class_centers, reduced_model, distance_type='L1'
         )
 
         L2_train_features, L2_train_class, L2_train_probability, L2_train_features_reduced, \
@@ -126,6 +127,7 @@ def main():
     
     COSINE_SIMILARITY = None
     COSINE_PREDS = None
+
     
     for dimension_target in dimensions:
         
@@ -183,15 +185,14 @@ def main():
     #FNMR vs FMR
     fmr_list = []
     fnmr_list = []
-    thresholds = [0.446, 0.472, 0.502] 
+    thresholds = [5, 8, 15, 17, 20, 35]
 
     for threshold in thresholds:
         fmr, fnmr = PerformanceEvaluation.false_rate(COSINE_SIMILARITY, test_labels, threshold, COSINE_PREDS)
         fmr_list.append(fmr)
         fnmr_list.append(fnmr)
         
-    PerformanceEvaluation.plot_ROC(fmr, fnmr)
-        
+    PerformanceEvaluation.plot_ROC(fmr_list, fnmr_list)
         
 if __name__ == "__main__":    
     main()

@@ -123,21 +123,32 @@ def main():
     
     dimensions = [30, 60, 80, 100, 107] #Different number of dimensions to try
 
-    CRR_RESULTS = []
+    CRR_RESULTS = {
+        'Number of Dimensions': [],
+        'crr_l1_normal': [],
+        'crr_l1_reduced': [],
+        'crr_l2_normal': [],
+        'crr_l2_reduced': [],
+        'crr_cosine_normal': [],
+        'crr_cosine_reduced': []
+    }
     
     COSINE_SIMILARITY = None
     COSINE_PREDS = None
 
     
     for dimension_target in dimensions:
-        
+        print(f"Matching with {dimension_target} dimensions...")
         reduced_model, reduced_class_centers = IrisMatching.reduce_dimensionality(
             train_features, train_labels, n_components=dimension_target
         )
 
-        crr_l1 = []
-        crr_l2 = []
-        crr_cosine = []
+        crr_l1_normal = []
+        crr_l1_reduced = []
+        crr_l2_normal = []
+        crr_l2_reduced = []
+        crr_cosine_normal = []
+        crr_cosine_reduced = []
 
         cosine_similarity = []
         cosine_preds = []
@@ -148,50 +159,66 @@ def main():
             L1_test_features_reduced, L1_test_class_reduced, L1_test_similarity_reduced = IrisMatching.match_iris(
                 feature, class_centers, reduced_class_centers, reduced_model, distance_type='L1'
             )
-            crr_l1.append(L1_test_class_reduced)
+            crr_l1_normal.append(L1_test_class)
+            crr_l1_reduced.append(L1_test_class_reduced)
 
             L2_test_features, L2_test_class, L2_test_similarity, L2_test_features_reduced, \
             L2_test_class_reduced, L2_test_similarity_reduced = IrisMatching.match_iris(
                 feature, class_centers, reduced_class_centers, reduced_model, distance_type='L2'
             )
-            crr_l2.append(L2_test_class_reduced)
-            
+            crr_l2_normal.append(L2_test_class)
+            crr_l2_reduced.append(L2_test_class_reduced)
             
             cosine_test_features, cosine_test_class, cosine_test_similarity, cosine_test_features_reduced, \
             cosine_test_class_reduced, cosine_test_similarity_reduced = IrisMatching.match_iris(
                 feature, class_centers, reduced_class_centers, reduced_model, distance_type='cosine'
             )
-            crr_cosine.append(cosine_test_class_reduced)
+            
+            crr_cosine_normal.append(cosine_test_class)
+            crr_cosine_reduced.append(cosine_test_class_reduced)
 
             cosine_similarity.append(cosine_test_similarity)
             cosine_preds.append(cosine_test_class)
-        
+            
+            
+        print("Calculating CRR...")
         # Calculating the correct recognition rate for each type of similarity
-        crr_l1 = PerformanceEvaluation.CRR(crr_l1, test_labels)
-        crr_l2 = PerformanceEvaluation.CRR(crr_l2, test_labels)
-        crr_cosine = PerformanceEvaluation.CRR(crr_cosine, test_labels)
-        CRR_RESULTS.append([crr_l1, crr_l2, crr_cosine])
-
+        crr_l1_normal_rate = PerformanceEvaluation.CRR(crr_l1_normal, test_labels)
+        crr_l1_reduced_rate = PerformanceEvaluation.CRR(crr_l1_reduced, test_labels)
+        crr_l2_normal_rate = PerformanceEvaluation.CRR(crr_l2_normal, test_labels)
+        crr_l2_reduced_rate = PerformanceEvaluation.CRR(crr_l2_reduced, test_labels)
+        crr_cosine_normal_rate = PerformanceEvaluation.CRR(crr_cosine_normal, test_labels)
+        crr_cosine_reduced_rate = PerformanceEvaluation.CRR(crr_cosine_reduced, test_labels)
+        
+        CRR_RESULTS['Number of Dimensions'].append(dimension_target)
+        CRR_RESULTS['crr_l1_normal'].append(crr_l1_normal_rate)
+        CRR_RESULTS['crr_l1_reduced'].append(crr_l1_reduced_rate)
+        CRR_RESULTS['crr_l2_normal'].append(crr_l2_normal_rate)
+        CRR_RESULTS['crr_l2_reduced'].append(crr_l2_reduced_rate)
+        CRR_RESULTS['crr_cosine_normal'].append(crr_cosine_normal_rate)
+        CRR_RESULTS['crr_cosine_reduced'].append(crr_cosine_reduced_rate)
+        
         COSINE_SIMILARITY = cosine_similarity
         COSINE_PREDS = cosine_preds
 
-    # Formatting the CRR results
-    CRR_RESULTS = pd.DataFrame(CRR_RESULTS, columns=['crr_l1', 'crr_l2', 'crr_cosine'])
-    CRR_RESULTS['dimensions'] = dimensions
-    CRR_RESULTS = CRR_RESULTS.set_index('dimensions')
-
+    # Formatting the CRR results into pandas dataframe
+    CRR_RESULTS = pd.DataFrame(CRR_RESULTS)
+    CRR_RESULTS.set_index("Number of Dimensions", inplace=True)
+    
+    PerformanceEvaluation.print_CRR_tables(CRR_RESULTS)
     PerformanceEvaluation.plot_CRR_curves(CRR_RESULTS)
     
     #FNMR vs FMR
     fmr_list = []
     fnmr_list = []
-    thresholds = [5, 8, 15, 17, 20, 35]
+    thresholds = [0.446, 0.472, 0.502, 8,10,12,15]
 
     for threshold in thresholds:
         fmr, fnmr = PerformanceEvaluation.false_rate(COSINE_SIMILARITY, test_labels, threshold, COSINE_PREDS)
         fmr_list.append(fmr)
         fnmr_list.append(fnmr)
-        
+    
+    PerformanceEvaluation.create_fmr_fnmr_table(thresholds, fmr_list, fnmr_list)
     PerformanceEvaluation.plot_ROC(fmr_list, fnmr_list)
         
 if __name__ == "__main__":    

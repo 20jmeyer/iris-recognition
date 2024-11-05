@@ -6,31 +6,31 @@ Replication of Iris detection and recognition paper.
 
 Implemented as described in _Personal Identification Based on Iris Texture Analysis_ by Ma et al. using the CASIA Iris Image Database (version 1.0).
 
-
 # IrisReconition.py
 
 **<span style="color: red;">Run Instructions:</span>**
-* Insert the CASIA database as a folder named "database" into the `iris-recognition` directory.
-* In your command line (ensuring that you are in the `iris-recognition` directory), run the command `python IrisRecognition.py`.
-* After these two steps are performed, the outputs will be tables printed in the console and figures that will open automatically.
+
+- Insert the CASIA database as a folder named "database" into the `iris-recognition` directory.
+- In your command line (ensuring that you are in the `iris-recognition` directory), run the command `python IrisRecognition.py`.
+- After these two steps are performed, the outputs will be tables printed in the console and figures that will open automatically.
 
 The IrisRecognition.py file contains the following functions:
 
 `main()`
 
-* This function does not accept any arguments, but runs the entire project.
+- This function does not accept any arguments, but runs the entire project.
 
 This function follows the below logic:
-* Processes all of the images, and stores them into training and test sets. In order to obtain the class labels, the images IDs are extracted by taking the first 3 digits of each image file name.
-* In the following order, `IrisLocalization.py`, `ImageNormalization.py`, `ImageEnhancement.py`, and `FeatureExtraction.py` are all run. This essentially serves as a processing pipeline where the irises are first localized, normalized, enhanced, then converted to a 1D feature vector. More detailed descriptions for each of these files are contained below.
-* These four files are run on both the training and the test sets.
-* If these four files have already been run once, there is no need to do it again. The function will simply load in pre-saved feature vectors for both the train and the test sets, obtained from running the pre-processing pipeline the first time.
-* Next, an LDA model is fit to the training set (both the reduced and non-reduced feature vectors). We use these models to perform dimensionality reduction on the training set, as well as the test set so that there is no information leakage.
-* For each distance type (L1, L2, and cosine) the reduced feature vectors in the training set are assigned to the iris with the closes match based on similarity. This is done by running the functions contained in `IrisMatching.py`, which are described in further detail below.
-* For each number of dimensions we wanted to try reducing to [30, 60, 80, 100, 107], as well as for each distance type (L1, L2, and cosine) the reduced feature vectors in the training set are assigned to the iris with the closes match based on similarity. This is done by running the functions contained in `IrisMatching.py`, which are described in further detail below. For the test set, similarity scores, class labels, and Correct Recognition Rates are stored in lists for plotting later.
-* Performance evaluation for Correct Recognition Rate is performed by running functions from `PerformanceEvaluation.py` on the stored lists of metrics. A more detailed description of the functions contained in this file are detailed below.
-* Performance evaluation for False Match Rate and False Non Match Rate is performed by running functions from `PerformanceEvaluation.py` on the stored lists of metrics. A more detailed description of the functions contained in this file are detailed below.
 
+- Processes all of the images, and stores them into training and test sets. In order to obtain the class labels, the images IDs are extracted by taking the first 3 digits of each image file name.
+- In the following order, `IrisLocalization.py`, `ImageNormalization.py`, `ImageEnhancement.py`, and `FeatureExtraction.py` are all run. This essentially serves as a processing pipeline where the irises are first localized, normalized, enhanced, then converted to a 1D feature vector. More detailed descriptions for each of these files are contained below.
+- These four files are run on both the training and the test sets.
+- If these four files have already been run once, there is no need to do it again. The function will simply load in pre-saved feature vectors for both the train and the test sets, obtained from running the pre-processing pipeline the first time.
+- Next, an LDA model is fit to the training set (both the reduced and non-reduced feature vectors). We use these models to perform dimensionality reduction on the training set, as well as the test set so that there is no information leakage.
+- For each distance type (L1, L2, and cosine) the reduced feature vectors in the training set are assigned to the iris with the closes match based on similarity. This is done by running the functions contained in `IrisMatching.py`, which are described in further detail below.
+- For each number of dimensions we wanted to try reducing to [30, 60, 80, 100, 107], as well as for each distance type (L1, L2, and cosine) the reduced feature vectors in the training set are assigned to the iris with the closes match based on similarity. This is done by running the functions contained in `IrisMatching.py`, which are described in further detail below. For the test set, similarity scores, class labels, and Correct Recognition Rates are stored in lists for plotting later.
+- Performance evaluation for Correct Recognition Rate is performed by running functions from `PerformanceEvaluation.py` on the stored lists of metrics. A more detailed description of the functions contained in this file are detailed below.
+- Performance evaluation for False Match Rate and False Non Match Rate is performed by running functions from `PerformanceEvaluation.py` on the stored lists of metrics. A more detailed description of the functions contained in this file are detailed below.
 
 # IrisLocalization.py
 
@@ -415,15 +415,15 @@ The main metrics used are Correct Recognition Rate (CRR), False Match Rate (FMR)
 
 ## Limitation(s) of the current design:
 
-Iris detection is not very smart due to the concentric circles assumption.
+Iris detection is not very smart due to the concentric circles assumption despite its performance being better than the threshold/edge detection/hough circles method.
 Currently, enhancement is pretty basic and does not account for reflections or
-eyelashes.
+eyelashes. Image enhancement also performed better just performing histogram equalization on the entire image rather than subtracting background illumination in 16x16 blocks and then histogram equalization on each 32x32 block.
 
 ## Improvements:
 
 We could make improvements on locating the iris using the same thresholding/Canny edge/Hough
 circle method with better parameters or improved image processing to help with the noise.
-Image enhancement could be further improved by accounting for reflections and eyelashes.
+Image enhancement could be further improved by accounting for reflections and eyelashes. Additionally finetuning the background illumination subtraction and then histogram equalization on the smaller blocks could be improved. Perhaps smaller blocks would perform better.
 
 ## Peer evaluation:
 

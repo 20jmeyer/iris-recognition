@@ -7,13 +7,9 @@ Replication of Iris detection and recognition paper.
 Implemented as described in _Personal Identification Based on Iris Texture Analysis_ by Ma et al.
 using the CASIA Iris Image Database (version 1.0). 
 
-Multiple iris images were first localized. Initially, we
-tried thresholding subimages and then using Canny edge detection and Hough circles for both the pupil and
-the iris. However, we switched to just using this method for pupil detection due to better results with a
-more naive method: For the iris, we instead naively assumed it is concentrically outside
-the pupil by estimating the iris radius to be 53 pixels longer than the pupil's and used this
-to find its bounding circle. Then, eyelids were detected using parabola fitting. A mask containing
-only the isolated iris was made and we ensured this was cropped and centered. 
+
+### IrisLocalization.py
+
 
 ### IrisNormalization.py
 The IrisNormalization.py file contains the following functions:

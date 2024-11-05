@@ -5,21 +5,60 @@ Replication of Iris detection and recognition paper.
 ## Design logic:
 
 Implemented as described in _Personal Identification Based on Iris Texture Analysis_ by Ma et al.
-using the CASIA Iris Image Database (version 1.0). Multiple iris images were first localized. Initially, we
+using the CASIA Iris Image Database (version 1.0). 
+
+Multiple iris images were first localized. Initially, we
 tried thresholding subimages and then using Canny edge detection and Hough circles for both the pupil and
 the iris. However, we switched to just using this method for pupil detection due to better results with a
 more naive method: For the iris, we instead naively assumed it is concentrically outside
 the pupil by estimating the iris radius to be 53 pixels longer than the pupil's and used this
 to find its bounding circle. Then, eyelids were detected using parabola fitting. A mask containing
-only the isolated iris was made and we ensured this was cropped and centered. Next, came iris
-normalization. The localized iris images were used as input. A mapping was made to transform the
-circular iris shape in polar coordinates into a 64x512 rectangle in cartesian coordinates. Then,
-the normalized iris images were enhanced. We tried enhancing the image as described in the paper.
-This involves first finding the mean of 16x16 blocks to estimate background illumination, performing
-bicubic interpolation, subtracting this estimate from the normalized image, and finally enhancing the
-image through histogram equalization on 32x32-sized blocks. However, we found that performance was 
-better by simply performing histogram equalization once on the image as a whole. 
+only the isolated iris was made and we ensured this was cropped and centered. 
 
+### IrisNormalization.py
+The IrisNormalization.py file contains the following functions:
+
+`ensure_gray`
+This function ensures the image was loaded correctly and in grayscale. If so, it returns the image. Otherwise, it
+converts the image to grayscale and returns that. If the image is not loaded correctly, an error message is 
+displayed and the program is exited. This is done because grayscale images are necessary for multiple cv2 utilities. 
+It takes as input the following parameters:
+
+* `img`, which is an nparray containing the image in question
+
+`calc_boundary_point`
+This function calculates the boundary points (x, y) at a given angle in a circle. It then returns these boundary points.
+It takes as input the following parameters:
+
+* `theta`, which is the given angle in radians as an np.float64
+* `circle`, which is the circle to find boundary points from. It is a list containing the x_coord, y_coord, & radius of the circle.
+
+`normalize_iris`
+This function maps the localized iris image from Cartesian coordinates to polar coordinates. It calls the IrisLocalization file to
+get both the pupil and iris circle boundaries. It initializes an empty nparray of size 64x512 (as suggested in the paper) 
+to hold the normalized iris image. Then, it divides the 360-degree polar coordinate space into 512 angle segments and iterates over 
+each angle around the circle. At each theta angle, the pupil and iris boundary points are calculated using `calc_boundary_point`. Then,
+it iterates 64 times (corresponding to the normalized cartesian map size) each time interpolating points between the two boundaries.
+This is to develop a representation of the polar space iris in the cartesian space. Lastly, it is mapped to the original image and a 
+normalized iris image is returned. It takes as input the following parameters:
+
+* `mask`, which is an nparray of a localized iris mask image
+
+### ImageEnhancement.py
+The ImageEnhancement.py file contains the following functions:
+
+`enhance_iris_basic`
+This function first ensures the given image is in grayscale, and then calls cv2.equalizeHist histogram equalization to enhance the image.
+It then returns the enhanced image. It is a simple approach, but seems to work very well. It takes as input the following parameters:
+
+* `norm_iris`, which should be an nparray of a normalized iris image
+
+`enhance_iris`
+This function enhances the image as described in the paper. This involves first finding the mean of 16x16 blocks to estimate background illumination, performing bicubic interpolation, subtracting this estimate from the normalized image, and finally enhancing the
+image through histogram equalization on 32x32-sized blocks. However, we found that performance was 
+better by simply performing histogram equalization once on the image as a whole as in `enhance_iris_basic`. This function did not end up being used. Regardless, it takes as input the following parameters:
+
+* `norm_iris`, which should be an nparray of a normalized iris image
 
 ### FeatureExtraction.py
 The FeatureExtraction.py file contains the following functions:

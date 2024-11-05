@@ -9,8 +9,7 @@ Implemented as described in _Personal Identification Based on Iris Texture Analy
 
 # IrisReconition.py
 
-**<span style="color: red;">Run Instructions</span>**
-In order to run this file, please
+**<span style="color: red;">Run Instructions:</span>**
 * Insert the CASIA database as a folder named "database" into the `iris-recognition` directory.
 * In your command line (ensuring that you are in the `iris-recognition` directory), run the command `python IrisRecognition.py`.
 * After these two steps are performed, the outputs will be tables printed in the console and figures that will open automatically.

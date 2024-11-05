@@ -5,7 +5,11 @@ import IrisLocalization  # for detect_pupil & naive_detect_iris
 
 
 def ensure_gray(img):
-    # Ensure image was loaded correctly and in grayscale
+    """
+    Ensure image was loaded correctly and in grayscale.
+    :param img: (nparray) image
+    :return: (nparray) grayscale image
+    """
     if img is None:
         print("Error loading image. Check the path.")
         sys.exit(1)
@@ -18,7 +22,12 @@ def ensure_gray(img):
 
 
 def calc_boundary_point(theta, circle):
-    # Calculate inner boundary point (x, y) at a given angle
+    """
+    Calculate boundary point (x, y) at a given angle in circle.
+    :param theta: (numpy.float64) given angle in radians
+    :param circle: (list) circle to calculate points from (x_coord, y_coord, radius)
+    :return: boundary points
+    """
     bound_x = circle[0] + circle[2] * np.cos(theta)
     bound_y = circle[1] + circle[2] * np.sin(theta)
     return bound_x, bound_y

@@ -210,7 +210,7 @@ def main():
     #FNMR vs FMR
     fmr_list = []
     fnmr_list = []
-    thresholds = [0.1,0.2,0.446, 0.472, 0.502, 0.8]
+    thresholds = [0.001, 0.01, 0.05, 0.15, 0.3, 0.446, 0.472, 0.502]  #8,10,12,15]
 
     for threshold in thresholds:
         fmr, fnmr = PerformanceEvaluation.false_rate(COSINE_SIMILARITY, test_labels, threshold, COSINE_PREDS)

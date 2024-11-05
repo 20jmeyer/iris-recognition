@@ -57,7 +57,7 @@ def main():
             cv2.imwrite(norm_name, norm_iris)
 
             # Enhancement
-            enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
+            enhanced_iris = ImageEnhancement.enhance_iris_basic(norm_iris)
             enhanced_name = './enhanced_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
             cv2.imwrite(enhanced_name, enhanced_iris)
 
@@ -79,7 +79,7 @@ def main():
             cv2.imwrite(norm_name, norm_iris)
 
             # Enhancement
-            enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
+            enhanced_iris = ImageEnhancement.enhance_iris_basic(norm_iris)
             enhanced_name = './enhanced_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
             cv2.imwrite(enhanced_name, enhanced_iris)
 

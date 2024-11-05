@@ -7,14 +7,19 @@ Replication of Iris detection and recognition paper.
 Implemented as described in _Personal Identification Based on Iris Texture Analysis_ by Ma et al.
 using the CASIA Iris Image Database (version 1.0). Multiple iris images were first localized. Initially, we
 tried thresholding subimages and then using Canny edge detection and Hough circles for both the pupil and
-the iris. However we switched to just using this method for pupil detection due to better results with a
+the iris. However, we switched to just using this method for pupil detection due to better results with a
 more naive method: For the iris, we instead naively assumed it is concentrically outside
 the pupil by estimating the iris radius to be 53 pixels longer than the pupil's and used this
 to find its bounding circle. Then, eyelids were detected using parabola fitting. A mask containing
 only the isolated iris was made and we ensured this was cropped and centered. Next, came iris
 normalization. The localized iris images were used as input. A mapping was made to transform the
 circular iris shape in polar coordinates into a 64x512 rectangle in cartesian coordinates. Then,
-the normalized iris images were enhanced. Enhancement was done using histogram equalization.
+the normalized iris images were enhanced. We tried enhancing the image as described in the paper.
+This involves first finding the mean of 16x16 blocks to estimate background illumination, performing
+bicubic interpolation, subtracting this estimate from the normalized image, and finally enhancing the
+image through histogram equalization on 32x32-sized blocks. However, we found that performance was 
+better by simply performing histogram equalization once on the image as a whole. 
+
 
 ### FeatureExtraction.py
 The FeatureExtraction.py file contains the following functions:
@@ -80,12 +85,15 @@ This function follows the below logic:
 
 ## Limitation(s) of the current design:
 
-Iris detection is not very smart due to the concentric circles assumption.
+Iris detection is not very smart due to the concentric circles assumption. 
+Currently, enhancement is pretty basic and does not account for reflections or 
+eyelashes.
 
 ## Improvements:
 
 We could make improvements on locating the iris using the same thresholding/Canny edge/Hough
 circle method with better parameters or improved image processing to help with the noise.
+Image enhancement could be further improved by accounting for reflections and eyelashes.
 
 ## Peer evaluation:
 

@@ -20,6 +20,31 @@ bicubic interpolation, subtracting this estimate from the normalized image, and 
 image through histogram equalization on 32x32-sized blocks. However, we found that performance was 
 better by simply performing histogram equalization once on the image as a whole. 
 
+### IrisReconition.py
+
+**<span style="color: red;">Run Instructions</span>**
+In order to run this file, please
+* Insert the CASIA database as a folder named "database" into the `iris-recognition` directory.
+* In your command line (ensuring that you are in the `iris-recognition` directory), run the command `python IrisRecognition.py`.
+* After these two steps are performed, the outputs will be tables printed in the console and figures that will open automatically.
+
+The IrisRecognition.py file contains the following functions:
+
+`main()`
+
+* This function does not accept any arguments, but runs the entire project.
+
+This function follows the below logic:
+* Processes all of the images, and stores them into training and test sets. In order to obtain the class labels, the images IDs are extracted by taking the first 3 digits of each image file name.
+* In the following order, `IrisLocalization.py`, `ImageNormalization.py`, `ImageEnhancement.py`, and `FeatureExtraction.py` are all run. This essentially serves as a processing pipeline where the irises are first localized, normalized, enhanced, then converted to a 1D feature vector. More detailed descriptions for each of these files are contained below.
+* These four files are run on both the training and the test sets.
+* If these four files have already been run once, there is no need to do it again. The function will simply load in pre-saved feature vectors for both the train and the test sets, obtained from running the pre-processing pipeline the first time.
+* Next, an LDA model is fit to the training set (both the reduced and non-reduced feature vectors). We use these models to perform dimensionality reduction on the training set, as well as the test set so that there is no information leakage.
+* For each distance type (L1, L2, and cosine) the reduced feature vectors in the training set are assigned to the iris with the closes match based on similarity. This is done by running the functions contained in `IrisMatching.py`, which are described in further detail below.
+* For each number of dimensions we wanted to try reducing to [30, 60, 80, 100, 107], as well as for each distance type (L1, L2, and cosine) the reduced feature vectors in the training set are assigned to the iris with the closes match based on similarity. This is done by running the functions contained in `IrisMatching.py`, which are described in further detail below. For the test set, similarity scores, class labels, and Correct Recognition Rates are stored in lists for plotting later.
+* Performance evaluation for Correct Recognition Rate is performed by running functions from `PerformanceEvaluation.py` on the stored lists of metrics. A more detailed description of the functions contained in this file are detailed below.
+* Performance evaluation for False Match Rate and False Non Match Rate is performed by running functions from `PerformanceEvaluation.py` on the stored lists of metrics. A more detailed description of the functions contained in this file are detailed below.
+
 
 ### FeatureExtraction.py
 The FeatureExtraction.py file contains the following functions:

@@ -71,8 +71,11 @@ def compute_nearest_center(reduced_feature, class_centers, distance_type='L2'):
     labels, values = zip(*similarities.items())
     probabilities = softmax(np.array(values))
 
-    # Find the predicted class and its probability
-    best_index = np.argmax(probabilities)
+    if distance_type != 'cosine':
+        best_index = np.argmax(probabilities)
+    else:
+        best_index = np.argmin(probabilities)
+
     predicted_class = labels[best_index]
     similarity = values[best_index]
 

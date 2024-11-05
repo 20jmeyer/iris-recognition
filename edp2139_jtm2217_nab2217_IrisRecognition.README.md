@@ -413,6 +413,24 @@ The main metrics used are Correct Recognition Rate (CRR), False Match Rate (FMR)
 
 ---
 
+# utils.py
+
+This file has small straight-forward helper functions to help keep the rest of the code clean.
+
+Here's a summary of each function's purpose:
+
+`save_features(features, labels, filepath)`: This function saves a tuple containing features and labels to a specified file using the pickle module for serialization.
+
+`load_features(filepath)`: This function loads the features and labels from a specified file, also using pickle.
+
+`create_output_dir(name, type)`: This function creates a new output directory structure based on the provided name and type ('train' or 'test'). It checks if the directory already exists to avoid duplication.
+
+`extract_labels(image_names)`: This function extracts numerical labels from a list of image names using regular expressions, returning them as a list of integers.
+
+`load_images_from_folder(base_folder)`: This function loads images from specified training and testing folders within subject directories. It iterates through each subject's directory, looks for training images in a subfolder named '1' and testing images in '2', and adds the image paths to a dictionary categorized as 'train' and 'test'.
+
+Overall, these functions are designed to facilitate the organization, storage, and retrieval of image data and their associated labels for further processing or analysis in a machine learning context.
+
 ## Limitation(s) of the current design:
 
 Iris detection is not very smart due to the concentric circles assumption despite its performance being better than the threshold/edge detection/hough circles method.

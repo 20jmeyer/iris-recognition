@@ -55,12 +55,12 @@ def false_rate(similarity, labels, threshold, preds):
     preds = np.array(preds)
 
 
-    # FMR: False positives where similarity < threshold but labels == preds (should reject but accepted)
-    false_matches = (similarity > threshold) & (labels == preds)
+    # FMR: False positives where similarity <= threshold but labels != preds (should reject but accepted)
+    false_matches = (similarity <= threshold) & (labels != preds)
     false_match_rate = false_matches.mean()*100
 
-    # FNMR: False negatives where similarity >= threshold but labels != preds (should accept but rejected)
-    false_non_matches = (similarity <= threshold) & (labels != preds)
+    # FNMR: False negatives where similarity > threshold but labels == preds (should accept but rejected)
+    false_non_matches = (similarity > threshold) & (labels == preds)
     false_non_match_rate = false_non_matches.mean()*100
 
 

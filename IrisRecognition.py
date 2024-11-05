@@ -57,7 +57,7 @@ def main():
             cv2.imwrite(norm_name, norm_iris)
 
             # Enhancement
-            enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
+            enhanced_iris = ImageEnhancement.enhance_iris_basic(norm_iris)
             enhanced_name = './enhanced_output/train/' + os.path.basename(image)[:-4] + '_iris.bmp'
             cv2.imwrite(enhanced_name, enhanced_iris)
 
@@ -79,7 +79,7 @@ def main():
             cv2.imwrite(norm_name, norm_iris)
 
             # Enhancement
-            enhanced_iris = ImageEnhancement.enhance_iris(norm_iris)
+            enhanced_iris = ImageEnhancement.enhance_iris_basic(norm_iris)
             enhanced_name = './enhanced_output/test/' + os.path.basename(image)[:-4] + '_iris.bmp'
             cv2.imwrite(enhanced_name, enhanced_iris)
 
@@ -210,7 +210,7 @@ def main():
     #FNMR vs FMR
     fmr_list = []
     fnmr_list = []
-    thresholds = [0.446, 0.472, 0.502, 8,10,12,15]
+    thresholds = [0.1,0.2,0.446, 0.472, 0.502, 0.8]
 
     for threshold in thresholds:
         fmr, fnmr = PerformanceEvaluation.false_rate(COSINE_SIMILARITY, test_labels, threshold, COSINE_PREDS)

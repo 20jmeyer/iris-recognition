@@ -485,7 +485,7 @@ def naive_detect_iris(pupil_circle):
     tuple: A tuple (x, y, r_iris) representing the estimated center coordinates 
            (x, y) and radius (r_iris) of the iris circle.
     """
-    iris_radius = pupil_circle[2] + 53
+    iris_radius = pupil_circle[2] + 45
     iris_circle = (pupil_circle[0], pupil_circle[1], iris_radius)
     return iris_circle
     

@@ -17,11 +17,130 @@ circular iris shape in polar coordinates into a 64x512 rectangle in cartesian co
 the normalized iris images were enhanced. We tried enhancing the image as described in the paper.
 This involves first finding the mean of 16x16 blocks to estimate background illumination, performing
 bicubic interpolation, subtracting this estimate from the normalized image, and finally enhancing the
-image through histogram equalization on 32x32-sized blocks. However, we found that performance was 
-better by simply performing histogram equalization once on the image as a whole. 
+image through histogram equalization on 32x32-sized blocks. However, we found that performance was
+better by simply performing histogram equalization once on the image as a whole.
 
+# IrisLocalization.py
+
+## Logic Overview:
+
+This script is designed to locate and return the segmented irises. It is designed to accurately detect and outline the iris region in a grayscale eye image, with a specific focus on locating the iris in relation to the pupil. The function first estimates a region around a determined pupil center by estimating the pupil center, projecting in the vertical and horizontal direction. It extracts a sub-image around this area and applies histogram equalization to enhance the visibility of iris features. Next, it performs binary thresholding to highlight the iris and removes noise with morphological operations, such as dilation and erosion, ensuring that any surrounding eyelashes or reflections do not interfere with detection. Using canny edge detection, the script identifies the circular boundaries of the iris by locating the contour that best matches a circular shape around the pupil center using Hough Circle detection.
+
+## Logic and Parameters by Function:
+
+### `load_and_preprocess_image`:
+
+- **Logic**: Loads image, converts to grayscale, and applies Gaussian blur to reduce noise.
+- **Parameters**:
+  - `image_path`: Path to input image file.
+  - `gray_image`: Grayscale version of input image.
+- **Returns**: Tuple of `(original_image, preprocessed_image)`.
+
+---
+
+### `detect_pupil`:
+
+- **Logic**: Uses projection and binary thresholding to estimate pupil center, uses Canny Edge detection on the thresholded image, and applies Hough Circle Transform.
+- **Parameters**:
+  - `param1`: Edge detection threshold (derived from contrast).
+  - `param2`: Circle detection threshold.
+  - `circles`: Detected circles from Hough transform.
+  - `edges`: Edge-detected image.
+  - `pad_size`: Amount of padding (50 pixels) added to handle boundary cases.
+- **Returns**: Tuple of `(pupil_circle, center)`.
+
+---
+
+### `detect_iris`:
+
+- **Logic**: Detects iris boundary using edge detection and Hough Transform.
+- **Parameters**:
+  - `attempt2`: Thresholded image for iris detection.
+  - `edges`: Edge-detected image.
+  - `lower_threshold, upper_threshold`: Thresholds based on image statistics.
+  - `contrast`: Standard deviation of edges.
+- **Returns**: Tuple of `(iris_circle, final_center)`.
+
+---
+
+### `locate_iris`:
+
+- **Logic**: Main function coordinating pupil and iris detection, creates masks for segmentation.
+- **Parameters**:
+  - `mask_between`: Mask showing area between iris and pupil.
+  - `segmented`: Final segmented iris image.
+  - `box_size`: Size of bounding box (2.5 times iris radius).
+  - `centered_segmented`: Cropped and centered final image.
+
+---
+
+### `detect_eyelids`:
+
+- **Logic**: Fits parabolic curves to eyelid edges and creates masks to remove eyelid regions.
+- **Parameters**:
+  - `upper_edge_points, lower_edge_points`: Points for eyelid edges.
+  - `parabola_upper, parabola_lower`: Coefficients of fitted curves.
+  - `mask`: Binary mask for removing eyelid regions.
+- **Returns**: Image with eyelids masked out.
+
+### `find_thresholded_subimage(image, center, lower_bound, upper_bound, size=120, is_pupil=True, repeat=False)`
+
+- **Purpose**: Extracts a thresholded sub-image around a specified center point, applying various preprocessing and thresholding techniques to enhance and segment the region of interest, which can be either the pupil or the iris.
+- **Parameters**:
+
+  - `image` (`numpy.ndarray`): The input grayscale image from which the sub-image will be extracted.
+  - `center` (`tuple`): Coordinates `(x, y)` representing the estimated center around which the sub-image will be centered.
+  - `lower_bound` (`int`): The lower bound for binary thresholding.
+  - `upper_bound` (`int`): The upper bound for binary thresholding.
+  - `size` (`int`, optional): The size of the square sub-image. Defaults to 120 pixels.
+  - `is_pupil` (`bool`, optional): Flag indicating if the sub-image is for the pupil (`True`) or the iris (`False`), adjusting preprocessing methods accordingly. Defaults to `True`.
+  - `repeat` (`bool`, optional): Flag for whether this is a second attempt at thresholding. If `True`, applies additional morphological operations to refine the binary image. Defaults to `False`.
+
+- **Returns**:
+
+  - `thresh` (`numpy.ndarray`): The processed binary thresholded sub-image.
+  - `(cx, cy)` (`tuple`): Centroid coordinates of the thresholded area within the sub-image.
+  - `(x_start, y_start)` (`tuple`): Top-left coordinates of the sub-image within the original image.
+
+- **Logic**:
+  1. **Extract Sub-image**:
+     - Based on the center coordinates and specified `size`, a square sub-image is cropped from the original image.
+  2. **Preprocessing and Thresholding**:
+     - If `is_pupil` is `True`:
+       - **Blur and CLAHE**: Applies Gaussian blur to reduce noise (e.g., from eyelashes) and CLAHE (Contrast Limited Adaptive Histogram Equalization) to enhance contrast.
+       - **Gamma Correction**: If mean brightness is high, adjusts gamma and darkens the image to better highlight pupil features.
+       - **Binary Thresholding**: Converts the sub-image to binary using the specified `lower_bound` and `upper_bound`.
+       - **Morphological Operations**: Uses dilation and erosion to eliminate noise (like eyelashes) and applies morphological closing to smooth boundaries.
+     - If `is_pupil` is `False`:
+       - **Equalization and CLAHE**: Uses histogram equalization and CLAHE to enhance contrast before thresholding.
+       - **Binary Thresholding**: Directly thresholds the image with specified bounds.
+  3. **Calculate Centroid**:
+     - Calculates the centroid of the thresholded area using image moments to determine the center of the thresholded region.
+
+---
+
+## Supporting Functions:
+
+### `adjust_gamma`: Adjusts image brightness.
+
+- **Parameters**:
+  - `gamma`: Brightness adjustment factor (default 1.5).
+
+### `darken_blacks`: Darkens specific regions.
+
+- **Parameters**:
+  - `threshold_value`: Intensity threshold (default 50).
+  - `darkening_factor`: Factor for darkening pixels (default 0.5).
+
+### `pad_image`: Adds padding to image.
+
+- **Parameters**:
+  - `pad_size`: Number of pixels to add on each side.
+
+---
 
 ### FeatureExtraction.py
+
 The FeatureExtraction.py file contains the following functions:
 
 `spatial_filter`
@@ -29,31 +148,33 @@ This function is designed to initialize the defined spatial filter in Ma et al's
 with a sinusoidal modulating function to extract image features from a localized, normalized, then enhanced iris.
 The spatial filter function takes as input the following parameters:
 
-* `x`, which is the X-coordinate of the spatial filter grid.
-* `y`, which is the Y-coordinate of the spatial filter grid.
-* `sigma_x`, which is the standard deviation along the x-axis for the Gaussian envelope.
-* `sigma_y`, which is the standard deviation along the y-axis for the Gaussian envelope.
-* `f`, which is the frequency of the modulation function.
+- `x`, which is the X-coordinate of the spatial filter grid.
+- `y`, which is the Y-coordinate of the spatial filter grid.
+- `sigma_x`, which is the standard deviation along the x-axis for the Gaussian envelope.
+- `sigma_y`, which is the standard deviation along the y-axis for the Gaussian envelope.
+- `f`, which is the frequency of the modulation function.
 
 This function follows the below logic:
-* The Gaussian envelope is initialized, per the formula provided by Ma et al. This is stored as the variable `G`
-* The sinusoidal modulation function is initialized, per the formula provided by Ma et al. This is stored as the variable `Mi`
-* `G` and `Mi` are multiplied together to obtain the complete spatial filter
+
+- The Gaussian envelope is initialized, per the formula provided by Ma et al. This is stored as the variable `G`
+- The sinusoidal modulation function is initialized, per the formula provided by Ma et al. This is stored as the variable `Mi`
+- `G` and `Mi` are multiplied together to obtain the complete spatial filter
 
 `apply_spatial_filter`
 This function is designed to apply the spatial filter initialized using the function above to an enhanced iris image. This function
 also ensures that the spatial filter is centered at each pixel of the iris image before convolving it with the image.
 The apply spatial filter function takes as an input the following parameters:
 
-* `image`, which is the localized, normalized, then enhanced iris image as a numpy array
-* `sigma_x`, which is the standard deviation along the x-axis for the Gaussian envelope
-* `sigma_y`, which is the standard deviation along the y-axis for the Gaussian envelope
-* `f`, which is the frequency of the modulating function.
+- `image`, which is the localized, normalized, then enhanced iris image as a numpy array
+- `sigma_x`, which is the standard deviation along the x-axis for the Gaussian envelope
+- `sigma_y`, which is the standard deviation along the y-axis for the Gaussian envelope
+- `f`, which is the frequency of the modulating function.
 
 This function follows the below logic:
-* `np.fromfunction` is used to create an output image that is the correct size after the convolution. we do `x-rows//2` and `y-rows//2` in order to center
-   the spatial filter at each pixel of the iris image.
-* `cv2.filter2D` is used to convolve the centered spatial filter with the iris image.
+
+- `np.fromfunction` is used to create an output image that is the correct size after the convolution. we do `x-rows//2` and `y-rows//2` in order to center
+  the spatial filter at each pixel of the iris image.
+- `cv2.filter2D` is used to convolve the centered spatial filter with the iris image.
 
 `extract_features`
 Using the frequency information that is the output of `apply_spatial_filter`, this function extracts the mean and absolute deviation
@@ -61,32 +182,122 @@ of each 8x8 patch of the filtered image. It rearranges these values into a 1D nu
 image.
 The extract features function takes as an input the following parameters:
 
-* `filtered_image`, which is the output of `apply_spatial_filter`. It is the frequency information of the iris image stored as a numpy array.
+- `filtered_image`, which is the output of `apply_spatial_filter`. It is the frequency information of the iris image stored as a numpy array.
 
 This function follows the below logic:
-* Loops through every 8 pixels of the x-axis of the filtered image
-* Loops through every 8 pixels of the y-axis of the filtered image
-* Uses the indices at each iteration of the loop to section off an 8x8 portion of the filtered image. Calculates the mean and aboslute deviation
+
+- Loops through every 8 pixels of the x-axis of the filtered image
+- Loops through every 8 pixels of the y-axis of the filtered image
+- Uses the indices at each iteration of the loop to section off an 8x8 portion of the filtered image. Calculates the mean and aboslute deviation
   for each patch.
-* Flattens all of the stored means and absolute deviations into a 1D vector after both loops have finished running.
+- Flattens all of the stored means and absolute deviations into a 1D vector after both loops have finished running.
 
 `feature_iris`
 Uses the enhanced iris image (represented as a numpy array) and applies all four of the above functions in sequential order to the image.
 This function mainly serves as a small pipeline to run all of the steps detailed above.
 The feature iris function takes as an input the following parameters:
 
-*`enhanced_iris`, which is the enhanced iris image (the output of the ImageEnhancement.py script) represented as a numpy array.
+\*`enhanced_iris`, which is the enhanced iris image (the output of the ImageEnhancement.py script) represented as a numpy array.
 
 This function follows the below logic:
-* Selects the Region Of Interest by using the top portion of the enhanced image
-* Applies the spatial filter in two domains using the `apply_spatial_filter` function from above.
-* Extracts the features from both filtered images using the `extract_features` function from above.
-* Creates the final feature vector by concatenting the result of applying the filter in both domains.
+
+- Selects the Region Of Interest by using the top portion of the enhanced image
+- Applies the spatial filter in two domains using the `apply_spatial_filter` function from above.
+- Extracts the features from both filtered images using the `extract_features` function from above.
+- Creates the final feature vector by concatenting the result of applying the filter in both domains.
+
+# PerformanceEvaluation.py
+
+## Logic Overview:
+
+This script is designed to evaluate the performance of an iris recognition system using various metrics
+It includes functions for calculating recognition rates, plotting performance curves, and creating comparison tables
+The main metrics used are Correct Recognition Rate (CRR), False Match Rate (FMR), and False Non-Match Rate (FNMR)
+
+## Logic and Parameters by Function:
+
+### `CRR(preds, labels):`
+
+- **Logic**: Calculates percentage of correct predictions by comparing predicted and actual labels.
+- **Parameters**:
+  - `preds`: Array of predicted class labels.
+  - `labels`: Array of true/actual class labels.
+- **Returns**: Accuracy percentage.
+
+---
+
+### `plot_CRR_curves(results):`
+
+- **Logic**: Creates 3 subplots comparing CRR across different similarity measures (L1, L2, Cosine).
+- **Parameters**:
+  - `results`: DataFrame containing performance metrics.
+  - `fig, axs`: Figure and subplot axes for visualization.
+  - `x`: Array of dimension numbers for x-axis values.
+- **Columns used**:
+  - `crr_l1_reduced`: CRR values for L1 similarity.
+  - `crr_l2_reduced`: CRR values for L2 similarity.
+  - `crr_cosine_reduced`: CRR values for cosine similarity.
+
+---
+
+### `false_rate(similarity, labels, threshold, preds):`
+
+- **Logic**: Calculates both FMR (False Match Rate) and FNMR (False Non-Match Rate) based on similarity scores.
+- **Parameters**:
+  - `similarity`: Array of similarity scores between pairs.
+  - `labels`: True class labels.
+  - `threshold`: Decision threshold for determining matches.
+  - `preds`: Predicted class labels.
+- **Returns**: Tuple of `(false_match_rate, false_non_match_rate)`.
+
+---
+
+### `plot_ROC(fmr, fnmr):`
+
+- **Logic**: Plots Receiver Operating Characteristic curve showing relationship between FMR and FNMR.
+- **Parameters**:
+  - `fmr`: Array of False Match Rate values.
+  - `fnmr`: Array of False Non-Match Rate values.
+
+---
+
+### `print_CRR_tables(CRR_RESULTS)`
+
+- **Purpose**: This function displays Cross Recognition Rate (CRR) tables for different dimensions. Each table includes CRR values based on different similarity measures and for both normal and reduced data.
+
+- **Parameters**:
+
+  - `CRR_RESULTS` (`pd.DataFrame`): A DataFrame containing CRR values. The DataFrame should have an index representing different dimensions, and columns for CRR values with similarity measures `L1`, `L2`, and `Cosine`, in both normal and reduced forms (e.g., `crr_l1_normal`, `crr_l1_reduced`).
+
+- **Logic**:
+  1. **Iterate Over Dimensions**: Loops through each unique dimension in the `CRR_RESULTS` index.
+  2. **Filter Data for Dimension**: Extracts data for the current dimension, creating a table containing CRR values.
+  3. **Format Table**: Constructs a new DataFrame with similarity measures as rows (`L1`, `L2`, and `Cosine`) and columns for `CRR Normal (%)` and `CRR Reduced (%)`.
+  4. **Display**: Prints the table along with a title indicating the dimension and a separator for readability.
+
+---
+
+### `create_fmr_fnmr_table(thresholds, fmr_list, fnmr_list)`
+
+- **Purpose**: This function creates and displays a table of False Match Rate (FMR) and False Non-Match Rate (FNMR) for a range of threshold values.
+
+- **Parameters**:
+
+  - `thresholds` (`list`): A list of threshold values used to compute FMR and FNMR.
+  - `fmr_list` (`list`): A list of FMR values corresponding to each threshold.
+  - `fnmr_list` (`list`): A list of FNMR values corresponding to each threshold.
+
+- **Logic**:
+  1. **Create DataFrame**: Constructs a DataFrame from the input lists, with columns for `Threshold`, `FMR`, and `FNMR`.
+  2. **Set Index**: Sets the `Threshold` column as the index for easy reference.
+  3. **Display**: Prints the table, allowing users to view FMR and FNMR values for each threshold.
+
+---
 
 ## Limitation(s) of the current design:
 
-Iris detection is not very smart due to the concentric circles assumption. 
-Currently, enhancement is pretty basic and does not account for reflections or 
+Iris detection is not very smart due to the concentric circles assumption.
+Currently, enhancement is pretty basic and does not account for reflections or
 eyelashes.
 
 ## Improvements:

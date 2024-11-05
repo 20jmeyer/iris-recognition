@@ -417,13 +417,13 @@ The main metrics used are Correct Recognition Rate (CRR), False Match Rate (FMR)
 
 Iris detection is not very smart due to the concentric circles assumption despite its performance being better than the threshold/edge detection/hough circles method.
 Currently, enhancement is pretty basic and does not account for reflections or
-eyelashes. Image enhancement also performed better just performing histogram equalization on the entire image rather than subtracting background illumination in 16x16 blocks and then histogram equalization on each 32x32 block.
+eyelashes. Image enhancement also performed better just performing histogram equalization on the entire image rather than subtracting background illumination in 16x16 blocks and then histogram equalization on each 32x32 block. For feature extraction, we are limited to two sinusodal modulating functions, whereas introducing more functions could extract more features of the iris for iris matching. In addition, when reducing dimensionality using the Fisher Linear Discriminant, we can only represent each iris using the number of features as there are irises in the dataset. In order to have a better representation of the irises, it would be useful to have more data and thus a higher dimension feature vector to classify irises.
 
 ## Improvements:
 
 We could make improvements on locating the iris using the same thresholding/Canny edge/Hough
 circle method with better parameters or improved image processing to help with the noise.
-Image enhancement could be further improved by accounting for reflections and eyelashes. Additionally finetuning the background illumination subtraction and then histogram equalization on the smaller blocks could be improved. Perhaps smaller blocks would perform better.
+Image enhancement could be further improved by accounting for reflections and eyelashes. Additionally finetuning the background illumination subtraction and then histogram equalization on the smaller blocks could be improved. Perhaps smaller blocks would perform better. In addition, adjusting the Region of Interest to make it slightly smaller, introducing more sinusodal functions into the spatial filter, augmenting our data to represent it in higher dimensions, and testing a larger set of rotation angles could be potential improvements to increase our CRR of the irises.
 
 ## Peer evaluation:
 

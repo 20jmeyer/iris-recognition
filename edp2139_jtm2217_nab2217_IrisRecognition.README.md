@@ -23,12 +23,15 @@ better by simply performing histogram equalization once on the image as a whole.
 
 ## Limitation(s) of the current design:
 
-Iris detection is not very smart due to the concentric circles assumption. We tried the thresholding + canny edge + hough circles for the iris detection as well but the performance was not as good.
+Iris detection is not very smart due to the concentric circles assumption. 
+Currently, enhancement is pretty basic and does not account for reflections or 
+eyelashes.
 
 ## Improvements:
 
 We could make improvements on locating the iris using the same thresholding/Canny edge/Hough
 circle method with better parameters or improved image processing to help with the noise.
+Image enhancement could be further improved by accounting for reflections and eyelashes.
 
 ## Peer evaluation:
 

@@ -4,24 +4,10 @@ Replication of Iris detection and recognition paper.
 
 ## Design logic:
 
-Implemented as described in _Personal Identification Based on Iris Texture Analysis_ by Ma et al.
-<<<<<<< HEAD
-using the CASIA Iris Image Database (version 1.0). Multiple iris images were first localized. Initially, we
-tried thresholding subimages and then using Canny edge detection and Hough circles for both the pupil and
-the iris. However, we switched to just using this method for pupil detection due to better results with a
-more naive method: For the iris, we instead naively assumed it is concentrically outside
-the pupil by estimating the iris radius to be 53 pixels longer than the pupil's and used this
-to find its bounding circle. Then, eyelids were detected using parabola fitting. A mask containing
-only the isolated iris was made and we ensured this was cropped and centered. Next, came iris
-normalization. The localized iris images were used as input. A mapping was made to transform the
-circular iris shape in polar coordinates into a 64x512 rectangle in cartesian coordinates. Then,
-the normalized iris images were enhanced. We tried enhancing the image as described in the paper.
-This involves first finding the mean of 16x16 blocks to estimate background illumination, performing
-bicubic interpolation, subtracting this estimate from the normalized image, and finally enhancing the
-image through histogram equalization on 32x32-sized blocks. However, we found that performance was 
-better by simply performing histogram equalization once on the image as a whole. 
+Implemented as described in _Personal Identification Based on Iris Texture Analysis_ by Ma et al. using the CASIA Iris Image Database (version 1.0).
 
-### IrisReconition.py
+
+# IrisReconition.py
 
 **<span style="color: red;">Run Instructions</span>**
 In order to run this file, please
@@ -46,10 +32,6 @@ This function follows the below logic:
 * Performance evaluation for Correct Recognition Rate is performed by running functions from `PerformanceEvaluation.py` on the stored lists of metrics. A more detailed description of the functions contained in this file are detailed below.
 * Performance evaluation for False Match Rate and False Non Match Rate is performed by running functions from `PerformanceEvaluation.py` on the stored lists of metrics. A more detailed description of the functions contained in this file are detailed below.
 
-
-### FeatureExtraction.py
-=======
-using the CASIA Iris Image Database (version 1.0).
 
 # IrisLocalization.py
 
@@ -217,7 +199,6 @@ better by simply performing histogram equalization once on the image as a whole 
 
 # FeatureExtraction.py
 
->>>>>>> bc66ca1ff9dfcd38a9de7300a6ac17468df91676
 The FeatureExtraction.py file contains the following functions:
 
 `spatial_filter`

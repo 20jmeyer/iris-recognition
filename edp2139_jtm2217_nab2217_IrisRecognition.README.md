@@ -21,8 +21,6 @@ image through histogram equalization on 32x32-sized blocks. However, we found th
 better by simply performing histogram equalization once on the image as a whole. 
 
 
-Enhancement was done using histogram equalization.
-
 ## Limitation(s) of the current design:
 
 Iris detection is not very smart due to the concentric circles assumption.
